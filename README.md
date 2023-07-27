@@ -12,7 +12,7 @@ This codebase uses the python packages networkx, numpy, matplotlib, and gurobipy
   pip install networkx
   pip install numpy
   pip install matplotlib
-  pip install gurobipu
+  pip install gurobipy
 ```
 
 This code also uses the gurobi optimizer to solve mixed-integer programming problems. To use this optimizer, you will need to download and activate gurobi.
