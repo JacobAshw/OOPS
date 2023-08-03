@@ -17,6 +17,7 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
     different_degrees = list(set(degree_sequence))
     # The number of verticies in the graph
     num_verticies = G.number_of_nodes()
+    num_tiles = 2 * len(different_degrees)
     # The list of edges in the graph
     edge_list = list(G.edges())
 
@@ -58,7 +59,7 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
         tile_bets_map = {}
 
         # populate tile_bets_map
-        for tile in range(num_verticies):
+        for tile in range(num_tiles):
             for hat in range(2):
                 name = "tile" + str(tile) + ":" + str(hat) 
                 x = m.addVar(vtype=GRB.INTEGER, lb=0, name=name)
@@ -70,7 +71,7 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
 
         # populate vertex_tiles_decision_map
         for vertex in range(num_verticies):
-            for tile in range(num_verticies):
+            for tile in range(num_tiles):
                 name = "node" +  str(vertex) + "istile" + str(tile)
                 x = m.addVar(vtype=GRB.BINARY, name=name)
                 vertex_tiles_decision_map.update({(vertex, tile) : x})
@@ -80,7 +81,7 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
         k_map = {}
 
         # populate k_map
-        for tile in range(num_verticies):
+        for tile in range(num_tiles):
             name = "k_tile" + str(tile)
             x = m.addVar(vtype=GRB.BINARY, name=name)
             k_map.update({(tile) : x})
@@ -122,7 +123,7 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
 
         # Add constraint: tiles are assigned to verticies of the correct degree
         for vertex in range(num_verticies):
-            for tile in range(num_verticies):
+            for tile in range(num_tiles):
                 cstr = gp.LinExpr()
                 for hat in range(2):
                     cstr = cstr + vertex_bets_map.get((vertex, hat))
@@ -139,24 +140,24 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
         # Add constraint: each vertex must be exactly one tile type
         for vertex in range(num_verticies):
             cstr = gp.LinExpr()
-            for tile in range(num_verticies):
+            for tile in range(num_tiles):
                 cstr = cstr + vertex_tiles_decision_map.get((vertex, tile))
             m.addConstr(cstr == 1, "v"+str(vertex)+"_one_tile_type")
         
         # Add constraint: Enforce tile selections
         for vertex in range(num_verticies):
-            for tile in range(num_verticies):
+            for tile in range(num_tiles):
                 for hat in range(2):
                     cstr = gp.LinExpr()
                     cstr = cstr + vertex_bets_map.get((vertex, hat))
                     cstr = cstr - tile_bets_map.get((tile, hat))
-                    for othertile in range(num_verticies):
+                    for othertile in range(num_tiles):
                         if(othertile!=tile):
                             cstr = cstr - max(different_degrees) * vertex_tiles_decision_map.get((vertex, othertile))
                     m.addConstr(cstr <= 0, "enforce_tile_selection_v"+str(vertex)+"t"+str(tile)+":"+str(hat))
 
         # Add constraint: Ks count tiles used
-        for tile in range(num_verticies):
+        for tile in range(num_tiles):
             cstr = gp.LinExpr()
             for hat in range(2):
                 cstr = cstr + tile_bets_map.get((tile, hat))
@@ -211,7 +212,7 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
         # Get our dictionary of tile assignments and build our pot
         pot = []
         tile_assignments = {}
-        for tile_num in range(num_verticies):
+        for tile_num in range(num_tiles):
             if(int(k_map.get((tile_num)).X) == 1):
                 tile = 'a' * int(tile_bets_map.get((tile_num, 0)).X)
                 tile = tile + 'A' * int(tile_bets_map.get((tile_num, 1)).X)
