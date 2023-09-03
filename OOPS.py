@@ -23,11 +23,11 @@ version = "1.0"
 
 # * User Controlled Paramaters
 # Parameters to control the overall program operation and data reporting
-CLI_Enabled = True # * If true, all following parameters are ignored, and command line prompts are used
-display_graph = False # If true, the graph will be displayed before and after computation begins
+CLI_Enabled = False # * If true, all following parameters are ignored, and command line prompts are used
+display_graph = True # If true, the graph will be displayed before and after computation begins
 timer_enabled = True # If true, there will be intermittent progress reports and total time will be displayed
 gurobi_printiouts = False # If true, gurobi (the ILP solver) will print out its progress. Many ILPs are run over the program, so this will be a lot
-scenario_number = 1 # Which scenario to run (Scenario 1, 2, or 3). Currently, only scenario 1 and 2 are supported
+scenario_number = 2 # Which scenario to run (Scenario 1, 2, or 3). Currently, only scenario 1 and 2 are supported
 
 # * Parameters to control the search space of the program.
 # You can use these to fine-tune the search space if you already have information about the graph
@@ -49,12 +49,12 @@ tile_types_maximum = math.inf
 # TODO: Add ability to generate all optimal pots
 # ! ---------------------------------------------------------------------------------------------------
 
-
+Graph = nx.path_graph(10)
 # Graph = nx.ladder_graph(6)
 #Graph = nx.cycle_graph(4)
 # Graph = nx.octahedral_graph()
 # Graph = nx.complete_graph(100)
-Graph = nx.grid_2d_graph(100,100)
+# Graph = nx.cartesian_product(nx.petersen_graph(), nx.karate_club_graph())
 # Graph = nx.truncated_tetrahedron_graph()
 
 # ! ---------------------------------------------------------------------------------------------------
