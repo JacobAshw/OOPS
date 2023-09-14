@@ -138,7 +138,7 @@ def cannonsort(pot):
 
 
     # newpot = sorted(newpot, key=lambda a:(100000-len(a), a))
-    return newpot
+    return alpha(newpot)
 
 sizemin = 8
 sizemax = 20
@@ -149,60 +149,62 @@ commasmax = 6
 successes = 0
 tries = 0
 
-for iter in range(1000000):
-    size = random.randint(sizemin, sizemax)
-    commas = random.randint(commasmin, commasmax)
-    pot = str_to_pot(gen_random_pot(size, commas))
+# for iter in range(1000000):
+#     size = random.randint(sizemin, sizemax)
+#     commas = random.randint(commasmin, commasmax)
+#     pot = str_to_pot(gen_random_pot(size, commas))
     
-    others = []
-    for jter in range(1):
-        others.append(shuffle_pot(pot))
+#     others = []
+#     for jter in range(1):
+#         others.append(shuffle_pot(pot))
     
-    cannon = cannonsort(pot)
-    othercannons = [cannonsort(ot) for ot in others]
+#     cannon = cannonsort(pot)
+#     othercannons = [cannonsort(ot) for ot in others]
     
-    match = True
-    for i in range(1):
-        match = match and (str(alpha(cannon)) == str(alpha(othercannons[i])))
-    # print(match)
+#     match = True
+#     for i in range(1):
+#         match = match and (str(alpha(cannon)) == str(alpha(othercannons[i])))
+#     # print(match)
 
-    tries = tries + 1
-    if(not match):
-        print("Miss-Match")
-        print(pot)
-        print(cannon)
-        print(alpha(cannon))
-        for other in othercannons:
-            print(others[othercannons.index(other)])
-            print(other)
-            print(alpha(other))
-    else:
-        successes = successes + 1
+#     tries = tries + 1
+#     if(not match):
+#         print("Miss-Match")
+#         print(pot)
+#         print(cannon)
+#         print(alpha(cannon))
+#         for other in othercannons:
+#             print(others[othercannons.index(other)])
+#             print(other)
+#             print(alpha(other))
+#     else:
+#         successes = successes + 1
 
-    # if(successes % 100 == 0):
-    print("Cannon worked " + str(successes) + " of " + str(tries) + " tries (" + str(successes/tries*100) + "%)")
-    # print("------------------------------")
+#     # if(successes % 100 == 0):
+#     print("Cannon worked " + str(successes) + " of " + str(tries) + " tries (" + str(successes/tries*100) + "%)")
+#     # print("------------------------------")
 
 
 
-# pot = str_to_pot("cAb,bA,aCa,cC")
+pot = str_to_pot("abcde,ab,cd,ae,e")
 # pot = str_to_pot("cd,C,D")
 
-# others = []
-# for jter in range(10):
-#     others.append(shuffle_pot(pot))
+others = []
+for jter in range(10):
+    others.append(shuffle_pot(pot))
 
-# cannon = cannonsort(pot)
-# othercannons = [cannonsort(ot) for ot in others]
+cannon = cannonsort(pot)
+othercannons = [cannonsort(ot) for ot in others]
 
-# match = True
-# for i in range(10):
-#     match = match and (str(cannon) == str(othercannons[i]))
-# # print(match)
-# if(not match):
-#     print("FUCK")
-#     print(pot)
-#     print(cannon)
-#     for other in othercannons:
-#         print(others[othercannons.index(other)])
-#         print(other)
+match = True
+for i in range(10):
+    match = match and (str(cannon) == str(othercannons[i]))
+# print(match)
+if(not match):
+    print("sad")
+    print(pot)
+    print(cannon)
+    print("-")
+    for other in othercannons:
+        print(others[othercannons.index(other)])
+        print(other)
+        print("-")
