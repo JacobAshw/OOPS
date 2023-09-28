@@ -27,7 +27,7 @@ CLI_Enabled = False # * If true, all following parameters are ignored, and comma
 display_graph = True # If true, the graph will be displayed before and after computation begins
 timer_enabled = True # If true, there will be intermittent progress reports and total time will be displayed
 gurobi_printiouts = False # If true, gurobi (the ILP solver) will print out its progress. Many ILPs are run over the program, so this will be a lot
-scenario_number = 2 # Which scenario to run (Scenario 1, 2, or 3). Currently, only scenario 1 and 2 are supported
+scenario_number = 1 # Which scenario to run (Scenario 1, 2, or 3). Currently, only scenario 1 and 2 are supported
 
 # * Parameters to control the search space of the program.
 # You can use these to fine-tune the search space if you already have information about the graph
@@ -49,7 +49,13 @@ tile_types_maximum = math.inf
 # TODO: Add ability to generate all optimal pots
 # ! ---------------------------------------------------------------------------------------------------
 
-Graph = nx.path_graph(10)
+Graph = nx.cycle_graph(4)
+Graph.add_edge(3, 1)
+Graph.add_node(4)
+Graph.add_node(5)
+Graph.add_edge(2,4)
+Graph.add_edge(4,1)
+Graph.add_edge(2,5)
 # Graph = nx.ladder_graph(6)
 #Graph = nx.cycle_graph(4)
 # Graph = nx.octahedral_graph()
@@ -297,10 +303,38 @@ if(valid_params):
                                 solved, pot, tile_assignments, orientations = loop_through_qvals(Graph, tiles, bond_edges, gurobi_printiouts)
                                 if(solved == True):
                                     print("T_2, B_2 same-pot conjecture counterexample detected!")
-                                    print(pot)
-                                    print(tile_assignments)
-                                    print(orientations)
-                                    print("Please make sure you report this result! It is either an error in the code, or an error in the conjecture!")
+                                    print("T_2<=" + str(tiles))
+                                    print("B_2=" + str(bond_edges))
+                                    print("pot: " + str(pot).replace("'", ""))
+                                    tile_usages = [len(tile_assignments.get(tile)) for tile in pot]
+                                    print("tile usages: " + str(tile_usages))
+                                    if(display_graph):
+                                        # Build the digraph to display from the orientation matrix
+                                        D = nx.DiGraph()
+                                        #Add each node
+                                        for vertex in range(Graph.number_of_nodes()):
+                                            D.add_node(vertex)
+
+                                        #Add each (directed) edge
+                                        edge_lables = {}
+                                        half_edges, half_edges_hat = get_half_edge_labels()
+                                        for index, orientation in enumerate(orientations):
+                                            for vertex1 in range(Graph.number_of_nodes()):
+                                                for vertex2 in range(Graph.number_of_nodes()):
+                                                    if(orientation[vertex1][vertex2] == 1):
+                                                        D.add_edge(vertex1, vertex2)
+                                                        edge_lables.update({(vertex1, vertex2) : half_edges[index]})
+                                        #Color our nodes
+                                        color_list = get_color_list(len(tile_assignments))
+                                        color_map = {}
+                                        for index,assignment in enumerate(tile_assignments):
+                                            for tile in tile_assignments.get(assignment):
+                                                color_map.update({tile : color_list[index]})
+                                        colors = [color_map.get(vertex) for vertex in range(Graph.number_of_nodes())]
+                                        #Display the graph
+                                        nx.draw_networkx(D, pos, labels=old_labels, node_color=colors, with_labels=True)
+                                        nx.draw_networkx_edge_labels(D, pos, edge_lables)
+                                        plt.show()
                                     sys.exit()
                         print("-----------------------------------------------------------------------")
                         print("Optimality verified. B_2=" +str(bond_edge_types))

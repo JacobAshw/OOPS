@@ -1,4 +1,3 @@
-import chunk
 import networkx as nx
 import time
 import csv
@@ -14,8 +13,8 @@ from OOPS_gurobi import *
 
 writedir = "pot_output"
 graphdir = "noniso_graphs"
-chunksize = 1000
-graphfilename = "graph6c.g6"
+chunksize = 1
+graphfilename = "graph7c.g6"
 #---------------------------------------------------------------------------------
 def loop_through_qvals(Graph: nx.graph, tile_types: int, bond_edge_types: int, gurobi_print: bool):
     #Set our initial qvalue limits
@@ -77,13 +76,13 @@ if(not os.path.exists(writedir + "/" + graphfilename + "_c" + str(chunksize))):
 completedfiles = os.listdir(writedir + "/" + graphfilename + "_c" + str(chunksize))
 for cf in completedfiles:
     cf2 = int(cf[cf.index("-")+1:cf.index(".")])
-    if(start_index < cf2):
+    if(start_index <= cf2):
         start_index = cf2 + 1
 
 header = ["Graph","T_1 Value","T_1 Pot","T_1 Ratios","T_1 Time","T_1 Orientation","T_2 Value","T_2 Pot","T_2 Pot Ratios","T_2 Orientation","B_2 Value","B_2 Pot","B_2 Pot Ratios","B_2 Orientation","SamePot","TileTime","BondTime"]
 
 while(start_index < len(graphs)):
-    endindex = start_index + chunksize
+    endindex = start_index + chunksize - 1
     if(endindex > len(graphs)-1):
         endindex = len(graphs)-1
 
@@ -119,7 +118,7 @@ while(start_index < len(graphs)):
             old_labels.update({index: node})
         Graph = nx.relabel_nodes(Graph, new_labels)
         # print(Graph)
-        print("Checking graph " + str(graphindex) + " in interval [" + str(start_index) + "-" + str(endindex) + "]")
+        print("Checking graph " + str(graphindex) + " in interval [" + str(start_index) + "-" + str(endindex) + "]" + ": " + str(Graph.edges()))
 
         #Run S1
         start_time = time.perf_counter()
