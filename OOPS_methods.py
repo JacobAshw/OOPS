@@ -12,6 +12,13 @@ import networkx as nx
 def get_half_edge_labels() -> tuple[list[chr],list[chr]]:
     return [chr(i) for i in range(97, 123)], [chr(i) for i in range(65, 91)]
 
+def hat(bet):
+    hel = get_half_edge_labels()
+    if bet in hel[0]:
+        return hel[1][hel[0].index(bet)]
+    if bet in hel[1]:
+        return hel[0][hel[1].index(bet)]
+
 # Get a list of n different colors, mainly used by OOPS to color the different tile types in the graph
 def get_color_list(num_colors: int) -> list:
     #If num_colors is 20 or less, we do our best to get a bunch of visually distinct colors

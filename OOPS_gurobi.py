@@ -245,6 +245,22 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
         print('Error code ' + str(e.errno) + ': ' + str(e))
 
 
+def optimal_pot_s2_warm(savedata):
+    m = savedata[0] #model
+    # indexing: (vertex, bet, hat)
+    vertex_bets_map = savedata[1]
+    # indexing: (tile, bet, hat)
+    tile_bets_map = savedata[2]
+    # indexing: (vertex, tile)
+    vertex_tiles_decision_map = savedata[3]
+    # indexing: (tile)
+    k_map = savedata[4]
+    # indexing: (vertex_from, vertex_to, bet, hat)
+    edge_constraints_map = savedata[5]
+    qbounds = savedata[6]
+
+
+
 #This is the ILP for scenario 2
 def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal, print_log):
     G = Graph
@@ -375,6 +391,8 @@ def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal,
                     coeff = coeff / l
             c = m.addConstr(q == min_qs[tile], "force q-value " + str(tile))
             qbounds.append(c)
+
+        savedata = [m, vertex_bets_map, tile_bets_map, vertex_tiles_decision_map, k_map, edge_constraints_map, qbounds]
 
         # Add constraint: same number of each bond edge type in all verticies (a graph can be made)
         for bond_edge in range(bond_edge_types):
