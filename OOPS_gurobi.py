@@ -245,7 +245,15 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
         print('Error code ' + str(e.errno) + ': ' + str(e))
 
 
-def optimal_pot_s2_warm(savedata):
+def optimal_pot_s2_warm(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal, print_log, savedata):
+    G = Graph
+    # Extract some graph info
+    degree_sequence = [d for n,d in G.degree()]
+    degree_sequence.sort()
+    different_degrees = list(set(degree_sequence))
+    num_verticies = G.number_of_nodes()
+    edge_list = list(G.edges())
+
     m = savedata[0] #model
     # indexing: (vertex, bet, hat)
     vertex_bets_map = savedata[1]
@@ -258,7 +266,98 @@ def optimal_pot_s2_warm(savedata):
     # indexing: (vertex_from, vertex_to, bet, hat)
     edge_constraints_map = savedata[5]
     qbounds = savedata[6]
+    qs = savedata[7]
 
+    for qb in qbounds:
+        m.remove(qb)
+
+    # m.update()
+
+    l = max(different_degrees) + 1
+    nqbounds = []
+    # Make sure we don't exceed min_q
+    for tile in range(num_tiles):
+        # print(min_qs[index])
+        q = gp.LinExpr()
+        coeff = pow(l, 2*bond_edge_types-1)
+        for bet in range(bond_edge_types):
+            for hat in range(2):
+                q = q + coeff * tile_bets_map.get((tile, bet, hat))
+                coeff = coeff / l
+        # print(q)
+        # print(min_qs[tile])
+        c = m.addConstr(q >= min_qs[tile], "minimum q-value " + str(tile))
+        nqbounds.append(c)
+
+    # Force equality below q_and_under_equal
+    for tile in range(q_and_under_equal):
+        q = gp.LinExpr()
+        coeff = pow(l, 2*bond_edge_types-1)
+        for bet in range(bond_edge_types):
+            for hat in range(2):
+                q = q + coeff * tile_bets_map.get((tile, bet, hat))
+                coeff = coeff / l
+        c = m.addConstr(q == min_qs[tile], "force q-value " + str(tile))
+        nqbounds.append(c)
+
+    m.update()
+    if(not print_log):
+        m.setParam(GRB.Param.LogToConsole, 0)
+    m.optimize()
+
+
+
+    # Turn our solutions into pots
+    half_edges, half_edges_hat = get_half_edge_labels()
+    if(m.status != 2):
+        if(m.status == 3):
+            savedata2 = [m, vertex_bets_map, tile_bets_map, vertex_tiles_decision_map, k_map, edge_constraints_map, nqbounds, qs]
+            return [], [], [], [], savedata2 #
+        else:
+            print("Status of optimization: ", m.status)
+            return None
+
+    qvals = [q.getValue() for q in qs]
+
+    # * Construct our pot and orientation, and return it----------------------------------------------------------
+    # Get our dictionary of tile assignments and build our pot
+    pot = []
+    tile_assignments = {}
+    for tile_num in range(num_tiles):
+        if(int(k_map.get((tile_num)).X) == 1):
+            tile = ''
+            for bond_edge in range(bond_edge_types):
+                tile = tile + half_edges[bond_edge] * int(tile_bets_map.get((tile_num, bond_edge, 0)).X)
+                tile = tile + half_edges_hat[bond_edge] * int(tile_bets_map.get((tile_num, bond_edge, 1)).X)
+            pot.append(tile)
+            tile_assignments.update({tile : []})
+            #add each vertex assigned to the tile
+            for vertex in range(num_verticies):
+                if(vertex_tiles_decision_map.get((vertex, tile_num)).X == 1):
+                    tile_assignments.get(tile).append(vertex)
+
+    # Build the edges of the orientation of the graph
+    orientations = []
+    for bond_edge in range(bond_edge_types):
+        orientation = []
+        for vertex in range(num_verticies):
+            this_row = []
+            for othervertex in range(num_verticies):
+                #Since the edge list only has one copy of each edge, we must check both directions
+                if((vertex, othervertex) in edge_list or (othervertex, vertex) in edge_list):
+                    this_row.append(edge_constraints_map.get((vertex, othervertex, bond_edge, 0)).X)
+                else:
+                    this_row.append(0)
+            orientation.append(this_row)
+        orientations.append(orientation)
+
+    # Primarily for debugging: comment out to print all decision variable values
+    # for v in m.getVars():
+    #     print('%s %g' % (v.VarName, v.X))
+
+    savedata2 = [m, vertex_bets_map, tile_bets_map, vertex_tiles_decision_map, k_map, edge_constraints_map, nqbounds, qs]
+
+    return pot, tile_assignments, orientations, qvals, savedata2
 
 
 #This is the ILP for scenario 2
@@ -391,8 +490,6 @@ def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal,
                     coeff = coeff / l
             c = m.addConstr(q == min_qs[tile], "force q-value " + str(tile))
             qbounds.append(c)
-
-        savedata = [m, vertex_bets_map, tile_bets_map, vertex_tiles_decision_map, k_map, edge_constraints_map, qbounds]
 
         # Add constraint: same number of each bond edge type in all verticies (a graph can be made)
         for bond_edge in range(bond_edge_types):
@@ -528,7 +625,7 @@ def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal,
         half_edges, half_edges_hat = get_half_edge_labels()
         if(m.status != 2):
             if(m.status == 3):
-                return [], [], [], [] #
+                return [], [], [], [], [] #
             else:
                 print("Status of optimization: ", m.status)
                 return None
@@ -570,8 +667,9 @@ def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal,
         # Primarily for debugging: comment out to print all decision variable values
         # for v in m.getVars():
         #     print('%s %g' % (v.VarName, v.X))
+        savedata = [m, vertex_bets_map, tile_bets_map, vertex_tiles_decision_map, k_map, edge_constraints_map, qbounds, qs]
 
-        return pot, tile_assignments, orientations, qvals
+        return pot, tile_assignments, orientations, qvals, savedata
 
 
     except gp.GurobiError as e:

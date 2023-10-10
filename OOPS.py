@@ -27,7 +27,7 @@ CLI_Enabled = False # * If true, all following parameters are ignored, and comma
 display_graph = True # If true, the graph will be displayed before and after computation begins
 timer_enabled = True # If true, there will be intermittent progress reports and total time will be displayed
 gurobi_printiouts = False # If true, gurobi (the ILP solver) will print out its progress. Many ILPs are run over the program, so this will be a lot
-scenario_number = 1 # Which scenario to run (Scenario 1, 2, or 3). Currently, only scenario 1 and 2 are supported
+scenario_number = 2 # Which scenario to run (Scenario 1, 2, or 3). Currently, only scenario 1 and 2 are supported
 
 # * Parameters to control the search space of the program.
 # You can use these to fine-tune the search space if you already have information about the graph
@@ -49,13 +49,13 @@ tile_types_maximum = math.inf
 # TODO: Add ability to generate all optimal pots
 # ! ---------------------------------------------------------------------------------------------------
 
-Graph = nx.cycle_graph(4)
-Graph.add_edge(3, 1)
-Graph.add_node(4)
-Graph.add_node(5)
-Graph.add_edge(2,4)
-Graph.add_edge(4,1)
-Graph.add_edge(2,5)
+Graph = nx.grid_2d_graph(2, 5)
+# Graph.add_edge(3, 1)
+# Graph.add_node(4)
+# Graph.add_node(5)
+# Graph.add_edge(2,4)
+# Graph.add_edge(4,1)
+# Graph.add_edge(2,5)
 # Graph = nx.ladder_graph(6)
 #Graph = nx.cycle_graph(4)
 # Graph = nx.octahedral_graph()
@@ -193,11 +193,17 @@ if(valid_params):
             #Set our initial qvalue limits
             minqs = [0 for i in range(tile_types)]
             q_under_equal = -1
+
+            initial = True
             
             #keep checking pots
             while(True):
                 #get our pot
-                pot, tile_assignments, orientations, qvals = optimal_pot_s2(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print)
+                if(initial):
+                    pot, tile_assignments, orientations, qvals, savedata = optimal_pot_s2(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print)
+                    # initial = False
+                else:
+                    pot, tile_assignments, orientations, qvals, savedata = optimal_pot_s2_warm(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print, savedata)
                 
                 #if we got nothing and no equality is enforced, we cannot generate a pot under these constraints
                 if(q_under_equal<=0 and len(pot)==0):
@@ -297,6 +303,8 @@ if(valid_params):
                         break
                     elif(choice.lower()[0] == 'y'):
                         print("Verifying optimailty...")
+                        if(timer_enabled):
+                            time_initial = time.perf_counter()
                         for bond_edges in range(bond_edge_type_minimum, bond_edge_types):
                             for tiles in range(tile_types+1, tile_types_maximum + 1):
                                 print("Checking B_2=" + str(bond_edges) + ", T_2=" + str(tiles))
@@ -336,6 +344,9 @@ if(valid_params):
                                         nx.draw_networkx_edge_labels(D, pos, edge_lables)
                                         plt.show()
                                     sys.exit()
+                        if(timer_enabled):
+                            time_final = time.perf_counter()
+                            print("Took " + str(time_final-time_initial) + " seconds")
                         print("-----------------------------------------------------------------------")
                         print("Optimality verified. B_2=" +str(bond_edge_types))
                         break
