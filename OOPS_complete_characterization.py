@@ -24,7 +24,7 @@ def loop_through_qvals(Graph: nx.graph, tile_types: int, bond_edge_types: int, g
     #keep checking pots
     while(True):
         #get our pot
-        pot, tile_assignments, orientations, qvals = optimal_pot_s2(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print)
+        pot, tile_assignments, orientations, qvals, save_data = optimal_pot_s2(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print)
         
         #if we got nothing and no equality is enforced, we cannot generate a pot under these constraints
         if(q_under_equal<=0 and len(pot)==0):
