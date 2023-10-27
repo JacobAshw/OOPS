@@ -2,7 +2,6 @@ import math
 import random
 from tkinter import E
 import networkx as nx
-import matplotlib.pyplot as plt
 
 # This file contains methods used by OOPS.py
 # Many functions are isolated here for decluttering of the main file
@@ -30,33 +29,6 @@ def get_color_list(num_colors: int) -> list:
     #If there are too many colors, just generate random colors
     #Inspired by the approaches here: https://www.geeksforgeeks.org/create-random-hex-color-code-using-python/
     return [hex(random.randrange(0, 2**24)) for i in range(num_colors)]
-
-def display_orientation(Graph, pot, tile_assignments, orientations, pos, old_labels):
-    D = nx.DiGraph()
-    #Add each node
-    for vertex in range(Graph.number_of_nodes()):
-        D.add_node(vertex)
-
-    #Add each (directed) edge
-    edge_lables = {}
-    half_edges, half_edges_hat = get_half_edge_labels()
-    for index, orientation in enumerate(orientations):
-        for vertex1 in range(Graph.number_of_nodes()):
-            for vertex2 in range(Graph.number_of_nodes()):
-                if(orientation[vertex1][vertex2] == 1):
-                    D.add_edge(vertex1, vertex2)
-                    edge_lables.update({(vertex1, vertex2) : half_edges[index]})
-    #Color our nodes
-    color_list = get_color_list(len(tile_assignments))
-    color_map = {}
-    for index,assignment in enumerate(tile_assignments):
-        for tile in tile_assignments.get(assignment):
-            color_map.update({tile : color_list[index]})
-    colors = [color_map.get(vertex) for vertex in range(Graph.number_of_nodes())]
-    #Display the graph
-    nx.draw_networkx(D, pos, labels=old_labels, node_color=colors, with_labels=True)
-    nx.draw_networkx_edge_labels(D, pos, edge_lables)
-    plt.show()
 
 
 # This code runs the command line interface. It is largely uncommented, as the print statements provide sufficient information

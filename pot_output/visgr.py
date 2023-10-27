@@ -8,7 +8,7 @@ import math
 import os
 import matplotlib.pyplot as plt
 
-graphname = "ECzW"
+graphname = "F?q`o"
 with tempfile.NamedTemporaryFile() as f:
     sstr = ">>graph6<<"+graphname+"\n"
     _ = f.write(sstr.encode())
@@ -22,4 +22,3 @@ plt.show()
 
 #Checking graph properties
 examples = ["EQyw", "EQjo", "EEjo", "ECzw"]
-non

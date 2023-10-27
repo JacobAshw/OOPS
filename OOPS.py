@@ -8,7 +8,7 @@ from OOPS_gurobi import *
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------
 # The Optimal Oriented Pot Solver (OOPS)
-version = "1.0"
+version = "1.2"
 # The goal of this code is to compute the optimal pot of tiles to construct a given graph
 # Further detail of this code can be found here: TODO: Link to archive when paper is uploaded
 # The current version only supports simple graphs, so self-loops and multi-edges may cause unsupported behavior
@@ -28,6 +28,7 @@ display_graph = True # If true, the graph will be displayed before and after com
 timer_enabled = True # If true, there will be intermittent progress reports and total time will be displayed
 gurobi_printiouts = False # If true, gurobi (the ILP solver) will print out its progress. Many ILPs are run over the program, so this will be a lot
 scenario_number = 2 # Which scenario to run (Scenario 1, 2, or 3). Currently, only scenario 1 and 2 are supported
+one_shot = True
 
 # * Parameters to control the search space of the program.
 # You can use these to fine-tune the search space if you already have information about the graph
@@ -49,7 +50,8 @@ tile_types_maximum = math.inf
 # TODO: Add ability to generate all optimal pots
 # ! ---------------------------------------------------------------------------------------------------
 
-Graph = nx.grid_2d_graph(2, 5)
+# Graph = nx
+Graph = nx.grid_2d_graph(2, 4)
 # Graph.add_edge(3, 1)
 # Graph.add_node(4)
 # Graph.add_node(5)
@@ -130,225 +132,206 @@ if(valid_params):
         #If display_graph is enabled, draw the graph
         if(display_graph):
             # Build the digraph to display from the orientation matrix
-            D = nx.DiGraph()
-            #Add each node
-            for vertex in range(Graph.number_of_nodes()):
-                D.add_node(vertex)
-            #Add each (directed) edge
-            for vertex1 in range(Graph.number_of_nodes()):
-                for vertex2 in range(Graph.number_of_nodes()):
-                    if(orientation[vertex1][vertex2] == 1):
-                        D.add_edge(vertex1, vertex2)
-            #Add our edge labels (everything is 'a' is S1)
-            edge_lables = {}
-            for edge in Graph.edges():
-                edge_lables.update({edge : 'a'})
-            #Color our nodes
-            color_list = get_color_list(len(tile_assignments))
-            color_map = {}
-            for index,assignment in enumerate(tile_assignments):
-                for tile in tile_assignments.get(assignment):
-                    color_map.update({tile : color_list[index]})
-            colors = [color_map.get(vertex) for vertex in range(Graph.number_of_nodes())]
-            #Display the graph
-            nx.draw_networkx(D, pos, labels=old_labels, node_color=colors, with_labels=True)
-            nx.draw_networkx_edge_labels(D, pos, edge_lables)
-            plt.show()
+            display_orientation(Graph, pot, tile_assignments, orientation, pos, old_labels)
+
 
     if(scenario_number == 2):
-        #We check if this is a full sweep, which lets us check for T_2, B_2 same-pot conjecture counterexamples later
-        full_sweep = True
-        # *Start by doing our best to improve the bounds given to us
-        #We know T_2 > T_1, so improve that bound if possible
-        if(tile_types_minimum <= len(pot)):
-            print("Set tile types minimum through Scenario 1 check")
-            tile_types_minimum = len(pot)
-        else:
-            full_sweep = False
-        #We know T_2 < Size(G)
-        if(tile_types_maximum >= Graph.number_of_nodes()):
-            print("Set tile types maximum to number of nodes")
-            tile_types_maximum = Graph.number_of_nodes()
-        else:
-            full_sweep = False
-        #Since B_2 + 1 < T_2, and T_2<=n, this means B_2<=n-1
-        if(bond_edge_type_maximum >= Graph.number_of_nodes()-1):
-            print("Set bond edge types maximum to number of nodes - 1")
-            bond_edge_type_maximum = Graph.number_of_nodes()-1
-        else:
-            full_sweep = False
-        print("-----------------------------------------------------------------------")
-        # The final check to see if we're doing a full sweep
-        if(bond_edge_type_minimum != 1):
-            full_sweep = False
-
-        #Set our initial values
-        tile_types = tile_types_minimum
-        bond_edge_types = bond_edge_type_minimum
-
-        print("Checking bond edges: [" + str(bond_edge_type_minimum) + "-" + str(bond_edge_type_maximum) + "], tile types: [" + str(tile_types_minimum) + "-" + str(tile_types_maximum) + "]")
-
-        #Define the function to loop over all qvals in a specific tile and bond edge type
-        def loop_through_qvals(Graph: nx.graph, tile_types: int, bond_edge_types: int, gurobi_print: bool):
-            #Set our initial qvalue limits
-            minqs = [0 for i in range(tile_types)]
-            q_under_equal = -1
-
-            initial = True
-            
-            #keep checking pots
-            while(True):
-                #get our pot
-                if(initial):
-                    pot, tile_assignments, orientations, qvals, savedata = optimal_pot_s2(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print)
-                    # initial = False
-                else:
-                    pot, tile_assignments, orientations, qvals, savedata = optimal_pot_s2_warm(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print, savedata)
-                
-                #if we got nothing and no equality is enforced, we cannot generate a pot under these constraints
-                if(q_under_equal<=0 and len(pot)==0):
-                    return False, [], [], []
-
-                #if we got nothing and equailty is enforced, we move the threshold and try again
-                if(len(pot)==0):
-                    minqs[q_under_equal] = 0
-                    q_under_equal = q_under_equal - 1
-                    minqs[q_under_equal] = minqs[q_under_equal] + 1
-                    continue
-
-                #run the pot through the free variable checker
-                minsize, ratios = free_variable_solve(pot, bond_edge_types)
-
-                #if it passes, return the answer
-                if(minsize == Graph.number_of_nodes()):
-                    return True, pot, tile_assignments, orientations
-                
-                #if it generates something bigger, an error has happened
-                elif(minsize > Graph.number_of_nodes()):
-                    print("Pot cannot generate a graph. minsize: "+str(minsize))
-                    #We want the program to crash now, so return nothing
-                    return None
-
-                #if it generates something smaller we set the lower bound to these qvalues, plus one
-                else:
-                    minqs = qvals
-                    q_under_equal = len(minqs) - 1
-                    minqs[q_under_equal] = minqs[q_under_equal] + 1
-        
-        #Now slowly increase our bounds until we find an answer
-        solved = False
-        while not solved:
-            print("Checking B_2=" + str(bond_edge_types) + ", T_2=" + str(tile_types))
-            solved, pot, tile_assignments, orientations = loop_through_qvals(Graph, tile_types, bond_edge_types, gurobi_printiouts)
-            if not solved:
-                bond_edge_types = bond_edge_types + 1
-                if(bond_edge_types >= tile_types or bond_edge_types > bond_edge_type_maximum):
-                    bond_edge_types = bond_edge_type_minimum
-                    tile_types = tile_types + 1
-                if(tile_types > tile_types_maximum):
+        #Test code for one-shot
+        if(one_shot):
+            if(True):
+                if(timer_enabled):
+                    time_initial = time.perf_counter()
+                partitions = []
+                while(True):
+                    print("part: ", partitions)
+                    max_tiles = 5
+                    max_bonds = 4
+                    pot, tile_assignments, orientations = optimal_pot_s2_one_shot(Graph, max_bonds, max_tiles, False, partitions)
+                    print(pot)
+                    print(tile_assignments)
+                    minsize, ratios = free_variable_solve(pot, max_bonds)
+                    print("ms: ", minsize)
+                    print("rt: ", ratios)
+                    if(minsize < Graph.number_of_nodes()):
+                        while(len(ratios) < max_tiles):
+                            ratios.append(0)
+                        partitions.append(ratios)
+                        continue
                     break
-        print("-----------------------------------------------------------------------")
-        if not solved:
-            print("Solution not found within bounds. Consider increasing search space")
-        else:
-            print("Computation Complete")
-            if(full_sweep):
-                print("Optimality Guaranteed up to T_2, B_2 same-pot conjecture")
-                print("T_2=" + str(tile_types))
-                print("B_2<=" + str(bond_edge_types))
+                if(timer_enabled):
+                    time_final = time.perf_counter()
+                    print("Took " + str(time_final-time_initial) + " seconds")
+                if(display_graph):
+                    # Build the digraph to display from the orientation matrix
+                    display_orientation(Graph, pot, tile_assignments, orientations, pos, old_labels)
             else:
-                print("Optimality Guaranteed within range, up to T_2, B_2 same-pot conjecture")
-                print("T_2<=" + str(tile_types))
-                print("B_2<=" + str(bond_edge_types))
-            print("pot: " + str(pot).replace("'", ""))
-            tile_usages = [len(tile_assignments.get(tile)) for tile in pot]
-            print("tile usages: " + str(tile_usages))
-            if(timer_enabled):
-                time_final = time.perf_counter()
-                print("Took " + str(time_final-time_initial) + " seconds")
-            #If display_graph is enabled, draw the graph
-            if(display_graph):
-                # Build the digraph to display from the orientation matrix
-                D = nx.DiGraph()
-                #Add each node
-                for vertex in range(Graph.number_of_nodes()):
-                    D.add_node(vertex)
-
-                #Add each (directed) edge
-                edge_lables = {}
-                half_edges, half_edges_hat = get_half_edge_labels()
-                for index, orientation in enumerate(orientations):
-                    for vertex1 in range(Graph.number_of_nodes()):
-                        for vertex2 in range(Graph.number_of_nodes()):
-                            if(orientation[vertex1][vertex2] == 1):
-                                D.add_edge(vertex1, vertex2)
-                                edge_lables.update({(vertex1, vertex2) : half_edges[index]})
-                #Color our nodes
-                color_list = get_color_list(len(tile_assignments))
-                color_map = {}
-                for index,assignment in enumerate(tile_assignments):
-                    for tile in tile_assignments.get(assignment):
-                        color_map.update({tile : color_list[index]})
-                colors = [color_map.get(vertex) for vertex in range(Graph.number_of_nodes())]
-                #Display the graph
-                nx.draw_networkx(D, pos, labels=old_labels, node_color=colors, with_labels=True)
-                nx.draw_networkx_edge_labels(D, pos, edge_lables)
-                plt.show()
-            if(full_sweep):
-                print("-----------------------------------------------------------------------")
-                print("Would you like to verify optimality for B_2 (Y/N)? This may take a while.")
-                while True:
-                    choice = input()
-                    if(choice.lower()[0] == 'n'):
-                        break
-                    elif(choice.lower()[0] == 'y'):
-                        print("Verifying optimailty...")
-                        if(timer_enabled):
-                            time_initial = time.perf_counter()
-                        for bond_edges in range(bond_edge_type_minimum, bond_edge_types):
-                            for tiles in range(tile_types+1, tile_types_maximum + 1):
-                                print("Checking B_2=" + str(bond_edges) + ", T_2=" + str(tiles))
-                                solved, pot, tile_assignments, orientations = loop_through_qvals(Graph, tiles, bond_edges, gurobi_printiouts)
-                                if(solved == True):
-                                    print("T_2, B_2 same-pot conjecture counterexample detected!")
-                                    print("T_2<=" + str(tiles))
-                                    print("B_2=" + str(bond_edges))
-                                    print("pot: " + str(pot).replace("'", ""))
-                                    tile_usages = [len(tile_assignments.get(tile)) for tile in pot]
-                                    print("tile usages: " + str(tile_usages))
-                                    if(display_graph):
-                                        # Build the digraph to display from the orientation matrix
-                                        D = nx.DiGraph()
-                                        #Add each node
-                                        for vertex in range(Graph.number_of_nodes()):
-                                            D.add_node(vertex)
-
-                                        #Add each (directed) edge
-                                        edge_lables = {}
-                                        half_edges, half_edges_hat = get_half_edge_labels()
-                                        for index, orientation in enumerate(orientations):
-                                            for vertex1 in range(Graph.number_of_nodes()):
-                                                for vertex2 in range(Graph.number_of_nodes()):
-                                                    if(orientation[vertex1][vertex2] == 1):
-                                                        D.add_edge(vertex1, vertex2)
-                                                        edge_lables.update({(vertex1, vertex2) : half_edges[index]})
-                                        #Color our nodes
-                                        color_list = get_color_list(len(tile_assignments))
-                                        color_map = {}
-                                        for index,assignment in enumerate(tile_assignments):
-                                            for tile in tile_assignments.get(assignment):
-                                                color_map.update({tile : color_list[index]})
-                                        colors = [color_map.get(vertex) for vertex in range(Graph.number_of_nodes())]
-                                        #Display the graph
-                                        nx.draw_networkx(D, pos, labels=old_labels, node_color=colors, with_labels=True)
-                                        nx.draw_networkx_edge_labels(D, pos, edge_lables)
-                                        plt.show()
-                                    sys.exit()
-                        if(timer_enabled):
-                            time_final = time.perf_counter()
-                            print("Took " + str(time_final-time_initial) + " seconds")
-                        print("-----------------------------------------------------------------------")
-                        print("Optimality verified. B_2=" +str(bond_edge_types))
-                        break
+                if(timer_enabled):
+                    time_initial = time.perf_counter()
+                bond_edge_types = 1
+                tile_types = 1
+                solved = False
+                while not solved:
+                    print("Checking B_2=" + str(bond_edge_types) + ", T_2=" + str(tile_types))
+                    pot, tile_assignments, orientations = optimal_pot_s2_partition(Graph, bond_edge_types, tile_types, False)
+                    if not len(pot) >= 1:
+                        bond_edge_types = bond_edge_types + 1
+                        if(bond_edge_types >= tile_types or bond_edge_types > bond_edge_type_maximum):
+                            bond_edge_types = bond_edge_type_minimum
+                            tile_types = tile_types + 1
                     else:
-                        print("Please enter a single character, 'Y' or 'N'")
+                        break
+                print("Pot: ", pot)
+                print("Tile_assign: ", tile_assignments)
+                if(timer_enabled):
+                    time_final = time.perf_counter()
+                    print("Took " + str(time_final-time_initial) + " seconds")
+                if(display_graph):
+                    # Build the digraph to display from the orientation matrix
+                    display_orientation(Graph, pot, tile_assignments, orientation, pos, old_labels)
+
+        else:
+            #We check if this is a full sweep, which lets us check for T_2, B_2 same-pot conjecture counterexamples later
+            full_sweep = True
+            # *Start by doing our best to improve the bounds given to us
+            #We know T_2 > T_1, so improve that bound if possible
+            if(tile_types_minimum <= len(pot)):
+                print("Set tile types minimum through Scenario 1 check")
+                tile_types_minimum = len(pot)
+            else:
+                full_sweep = False
+            #We know T_2 < Size(G)
+            if(tile_types_maximum >= Graph.number_of_nodes()):
+                print("Set tile types maximum to number of nodes")
+                tile_types_maximum = Graph.number_of_nodes()
+            else:
+                full_sweep = False
+            #Since B_2 + 1 < T_2, and T_2<=n, this means B_2<=n-1
+            if(bond_edge_type_maximum >= Graph.number_of_nodes()-1):
+                print("Set bond edge types maximum to number of nodes - 1")
+                bond_edge_type_maximum = Graph.number_of_nodes()-1
+            else:
+                full_sweep = False
+            print("-----------------------------------------------------------------------")
+            # The final check to see if we're doing a full sweep
+            if(bond_edge_type_minimum != 1):
+                full_sweep = False
+
+            #Set our initial values
+            tile_types = tile_types_minimum
+            bond_edge_types = bond_edge_type_minimum
+
+            print("Checking bond edges: [" + str(bond_edge_type_minimum) + "-" + str(bond_edge_type_maximum) + "], tile types: [" + str(tile_types_minimum) + "-" + str(tile_types_maximum) + "]")
+
+            #Define the function to loop over all qvals in a specific tile and bond edge type
+            def loop_through_qvals(Graph: nx.graph, tile_types: int, bond_edge_types: int, gurobi_print: bool):
+                #Set our initial qvalue limits
+                minqs = [0 for i in range(tile_types)]
+                q_under_equal = -1
+
+                initial = True
+                
+                #keep checking pots
+                while(True):
+                    #get our pot
+                    pot, tile_assignments, orientations, qvals, savedata = optimal_pot_s2(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print)
+                    
+                    #if we got nothing and no equality is enforced, we cannot generate a pot under these constraints
+                    if(q_under_equal<=0 and len(pot)==0):
+                        return False, [], [], []
+
+                    #if we got nothing and equailty is enforced, we move the threshold and try again
+                    if(len(pot)==0):
+                        minqs[q_under_equal] = 0
+                        q_under_equal = q_under_equal - 1
+                        minqs[q_under_equal] = minqs[q_under_equal] + 1
+                        continue
+
+                    #run the pot through the free variable checker
+                    minsize, ratios = free_variable_solve(pot, bond_edge_types)
+
+                    #if it passes, return the answer
+                    if(minsize == Graph.number_of_nodes()):
+                        return True, pot, tile_assignments, orientations
+                    
+                    #if it generates something bigger, an error has happened
+                    elif(minsize > Graph.number_of_nodes()):
+                        print("Pot cannot generate a graph. minsize: "+str(minsize))
+                        #We want the program to crash now, so return nothing
+                        return None
+
+                    #if it generates something smaller we set the lower bound to these qvalues, plus one
+                    else:
+                        minqs = qvals
+                        q_under_equal = len(minqs) - 1
+                        minqs[q_under_equal] = minqs[q_under_equal] + 1
+            
+            #Now slowly increase our bounds until we find an answer
+            solved = False
+            while not solved:
+                print("Checking B_2=" + str(bond_edge_types) + ", T_2=" + str(tile_types))
+                solved, pot, tile_assignments, orientations = loop_through_qvals(Graph, tile_types, bond_edge_types, gurobi_printiouts)
+                if not solved:
+                    bond_edge_types = bond_edge_types + 1
+                    if(bond_edge_types >= tile_types or bond_edge_types > bond_edge_type_maximum):
+                        bond_edge_types = bond_edge_type_minimum
+                        tile_types = tile_types + 1
+                    if(tile_types > tile_types_maximum):
+                        break
+            print("-----------------------------------------------------------------------")
+            if not solved:
+                print("Solution not found within bounds. Consider increasing search space")
+            else:
+                print("Computation Complete")
+                if(full_sweep):
+                    print("Optimality Guaranteed up to T_2, B_2 same-pot conjecture")
+                    print("T_2=" + str(tile_types))
+                    print("B_2<=" + str(bond_edge_types))
+                else:
+                    print("Optimality Guaranteed within range, up to T_2, B_2 same-pot conjecture")
+                    print("T_2<=" + str(tile_types))
+                    print("B_2<=" + str(bond_edge_types))
+                print("pot: " + str(pot).replace("'", ""))
+                tile_usages = [len(tile_assignments.get(tile)) for tile in pot]
+                print("tile usages: " + str(tile_usages))
+                if(timer_enabled):
+                    time_final = time.perf_counter()
+                    print("Took " + str(time_final-time_initial) + " seconds")
+                #If display_graph is enabled, draw the graph
+                if(display_graph):
+                    # Build the digraph to display from the orientation matrix
+                    display_orientation(Graph, pot, tile_assignments, orientations, pos, old_labels)
+                if(full_sweep):
+                    print("-----------------------------------------------------------------------")
+                    print("Would you like to verify optimality for B_2 (Y/N)? This may take a while.")
+                    while True:
+                        choice = input()
+                        if(choice.lower()[0] == 'n'):
+                            break
+                        elif(choice.lower()[0] == 'y'):
+                            print("Verifying optimailty...")
+                            if(timer_enabled):
+                                time_initial = time.perf_counter()
+                            for bond_edges in range(bond_edge_type_minimum, bond_edge_types):
+                                for tiles in range(tile_types+1, tile_types_maximum + 1):
+                                    print("Checking B_2=" + str(bond_edges) + ", T_2=" + str(tiles))
+                                    solved, pot, tile_assignments, orientations = loop_through_qvals(Graph, tiles, bond_edges, gurobi_printiouts)
+                                    if(solved == True):
+                                        print("T_2, B_2 same-pot conjecture counterexample detected!")
+                                        print("T_2<=" + str(tiles))
+                                        print("B_2=" + str(bond_edges))
+                                        print("pot: " + str(pot).replace("'", ""))
+                                        tile_usages = [len(tile_assignments.get(tile)) for tile in pot]
+                                        print("tile usages: " + str(tile_usages))
+                                        if(display_graph):
+                                            # Build the digraph to display from the orientation matrix
+                                            display_orientation(Graph, pot, tile_assignments, orientations, pos, old_labels)
+
+                                        sys.exit()
+                            if(timer_enabled):
+                                time_final = time.perf_counter()
+                                print("Took " + str(time_final-time_initial) + " seconds")
+                            print("-----------------------------------------------------------------------")
+                            print("Optimality verified. B_2=" +str(bond_edge_types))
+                            break
+                        else:
+                            print("Please enter a single character, 'Y' or 'N'")

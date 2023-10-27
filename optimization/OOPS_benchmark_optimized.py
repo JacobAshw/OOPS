@@ -5,12 +5,13 @@ import sys
 import math
 import matplotlib.pyplot as plt
 import copy
-from OOPS_methods import *
-from OOPS_gurobi import *
+from OOPS_methods_optimized import *
+from OOPS_gurobi_optimized import *
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------
 # The Optimal Oriented Pot Solver (OOPS)
-version = "1.0"
+version = "1.1"
+# Version 1.1 - Canonsort Optimized
 # The goal of this code is to compute the optimal pot of tiles to construct a given graph
 # Further detail of this code can be found here: TODO: Link to archive when paper is uploaded
 # The current version only supports simple graphs, so self-loops and multi-edges may cause unsupported behavior
@@ -40,6 +41,10 @@ bond_edge_type_minimum = 1
 bond_edge_type_maximum = math.inf
 tile_types_minimum = 1
 tile_types_maximum = math.inf
+
+
+# TODO: WIP Params
+hot_starts = False
 
 # * Below is an area sectioned off for building the target graph
 # We use the networkx library (v3.1) for storing graphs (https://networkx.org/)
@@ -269,7 +274,6 @@ if(valid_params):
         all_pots_checked_t = []
         all_pots_checked_b = []
 
-        #Define the function to loop over all qvals in a specific tile and bond edge type
         def loop_through_qvals(Graph: nx.graph, tile_types: int, bond_edge_types: int, gurobi_print: bool, ptc):
             #Set our initial qvalue limits
             minqs = [0 for i in range(tile_types)]
@@ -280,7 +284,15 @@ if(valid_params):
             #keep checking pots
             while(True):
                 #get our pot
-                pot, tile_assignments, orientations, qvals, savedata = optimal_pot_s2(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print)
+                if(initial):
+                    pot, tile_assignments, orientations, qvals, savedata = optimal_pot_s2(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print)
+                    if(hot_starts):
+                        initial = False
+                    # initial = False
+                else:
+                    if(not hot_starts):
+                        print("Unexpected hot start")
+                    pot, tile_assignments, orientations, qvals, savedata = optimal_pot_s2_warm(Graph, bond_edge_types, tile_types, minqs, q_under_equal, gurobi_print, savedata)
                 
                 #if we got nothing and no equality is enforced, we cannot generate a pot under these constraints
                 if(q_under_equal<=0 and len(pot)==0):
