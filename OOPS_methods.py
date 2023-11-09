@@ -28,7 +28,6 @@ def get_color_list(num_colors: int) -> list:
 def CLI_Setup(version: str):
     print("OOPS solver version " + version)
     print("Using command line interface")
-    print("If you plan to use OOPS frequently, consider using a code editor and networkx for more efficient graph building")
     print("-----------------------------------------------------------------------")
     print("Please enter which scenario to find an optimal pot for ('1' or '2')")
     while True:
