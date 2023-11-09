@@ -300,10 +300,13 @@ if(valid_params):
                                     print(pot)
                                     print(tile_assignments)
                                     print(orientations)
-                                    print("Please make sure you report this result! It is either an error in the code, or an error in the conjecture!")
+                                    print("Press enter to close")
+                                    choice = input()
                                     sys.exit()
                         print("-----------------------------------------------------------------------")
                         print("Optimality verified. B_2=" +str(bond_edge_types))
+                        print("Press enter to close")
+                        choice = input()
                         break
                     else:
                         print("Please enter a single character, 'Y' or 'N'")
