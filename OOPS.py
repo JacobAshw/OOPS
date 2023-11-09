@@ -59,7 +59,6 @@ Graph = nx.grid_2d_graph(100,100)
 
 # ! ---------------------------------------------------------------------------------------------------
 
-print("OOPS solver version " + version)
 # * Get our parameters from the command line interface, if enabled
 if(CLI_Enabled):
     scenario_number, Graph = CLI_Setup(version)
@@ -67,6 +66,7 @@ if(CLI_Enabled):
     timer_enabled = True
     gurobi_printiouts = False
 else:
+    print("OOPS solver version " + version)
     print("Using program parameters")
 
 # * Relabel all of our nodes
