@@ -317,7 +317,7 @@ def optimal_pot_s2_one_shot(G, bond_edge_types, max_tiles, print_log, partitions
         for vertex in range(num_verticies):
             for tile in range(max_tiles):
                 name = "node" +  str(vertex) + "istile" + str(tile)
-                x = m.addVar(vtype=GRB.BINARY, name=name)
+                x = m.addVar(lb=0, ub=1, vtype=GRB.CONTINUOUS, name=name)
                 vertex_tiles_decision_map.update({(vertex, tile) : x})
 
         # For each tile type, create a corresponding k var
@@ -465,20 +465,49 @@ def optimal_pot_s2_one_shot(G, bond_edge_types, max_tiles, print_log, partitions
         #         cstr = cstr + num_bonds_used - num_bonds_used_hat
         #     m.addConstr(cstr == 0)
 
+        # for tile_perm in partitions:
+        #     # print("ENFORCE: ", tile_perm)
+        #     bigcstr = gp.LinExpr()
+        #     for bond_edge in range(bond_edge_types):
+        #         cstr = gp.LinExpr()
+        #         for tile in range(max_tiles):
+        #             cstr = cstr + (int(tile_perm[tile]) * tile_bets_map.get((tile, bond_edge, 0)))
+        #             cstr = cstr - (int(tile_perm[tile]) * tile_bets_map.get((tile, bond_edge, 1)))
+        #         gabs = m.addVar(lb=-100, ub=100, vtype=GRB.CONTINUOUS)
+        #         valz = m.addVar(lb=-100, ub=100, vtype=GRB.CONTINUOUS, name=str(tile_perm)+str(bond_edge)+str(tile))
+        #         m.addConstr(cstr == valz)
+        #         m.addConstr(gabs == gp.abs_(valz))
+        #         bigcstr = bigcstr + gabs
+        #     m.addConstr(bigcstr >= 1)
+        l =4
+        for tile in range(max_tiles-1):
+            cstr = gp.LinExpr()
+            coeff = 0
+            for bond_edge in range(bond_edge_types-1, -1, -1):
+                for hat in range(1, -1, -1):
+                    if(coeff == 0):
+                        coeff = 1
+                    else:
+                        coeff = coeff * l
+                    cstr = cstr + coeff * tile_bets_map.get((tile, bond_edge, hat))
+                    cstr = cstr - coeff * tile_bets_map.get((tile+1, bond_edge, hat))
+            m.addGenConstrIndicator(k_map.get((tile)), True, cstr >= 1, name="strictly_decreasing_a_t"+str(tile))
+
         for tile_perm in partitions:
             # print("ENFORCE: ", tile_perm)
-            bigcstr = gp.LinExpr()
+            # print(tile_perm)
+            nums = []
             for bond_edge in range(bond_edge_types):
                 cstr = gp.LinExpr()
                 for tile in range(max_tiles):
                     cstr = cstr + (int(tile_perm[tile]) * tile_bets_map.get((tile, bond_edge, 0)))
                     cstr = cstr - (int(tile_perm[tile]) * tile_bets_map.get((tile, bond_edge, 1)))
-                gabs = m.addVar(lb=-100, ub=100, vtype=GRB.CONTINUOUS)
                 valz = m.addVar(lb=-100, ub=100, vtype=GRB.CONTINUOUS, name=str(tile_perm)+str(bond_edge)+str(tile))
                 m.addConstr(cstr == valz)
-                m.addConstr(gabs == gp.abs_(valz))
-                bigcstr = bigcstr + gabs
-            m.addConstr(bigcstr >= 1)
+                nums.append(valz)
+            val2 = m.addVar(lb=0, ub=100)
+            z = m.addGenConstrNorm(val2, nums, GRB.INFINITY)
+            m.addConstr(val2 >= 1)
 
         # Sum of us is nonzero
         # cstr = gp.LinExpr()
