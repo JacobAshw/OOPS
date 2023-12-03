@@ -35,8 +35,11 @@ bond_edges_verification = True
 # qvalue
 # oneshot
 # partition
-# hybrid
-method = "partition"
+# canonical
+# hybrid-qvalue
+# hybrid-canonical
+
+method = "hybrid-qvalue"
 
 # * Below is an area sectioned off for building the target graph
 # We use the networkx library (v3.1) for storing graphs (https://networkx.org/)
@@ -53,6 +56,9 @@ Graph = nx.cycle_graph(4)
 Graph.add_node(5)
 Graph.add_edge(1, 5)
 Graph.add_edge(2, 5)
+
+
+Graph = nx.dodecahedral_graph()
 # Graph.add_edge(3, 1)
 # Graph.add_node(4)
 # Graph.add_node(5)
@@ -285,3 +291,53 @@ if(valid_params):
                         print("Optimal bond and tile mismatch")
                     if(display_graph):
                         display_orientation(Graph, pot, tile_assignments, orientations, pos, old_labels)
+
+        if(method == "hybrid-qvalue"):
+            #Timer code
+            if(timer_enabled):
+                time_initial = time.perf_counter()
+
+            #Solve for tiles
+            pot, tile_assignments, orientations = S2_tiles_hybrid_qvalue(Graph, gurobi_printiouts)
+            
+            #Timer code
+            if(timer_enabled):
+                time_final = time.perf_counter()
+                print("Took " + str(time_final-time_initial) + " seconds")
+
+            #Print results
+            print("Tile type optimization:")
+            optimal_tile_tiles, optimal_tile_bonds = print_pot(pot, tile_assignments)
+            if(display_graph):
+                display_orientation(Graph, pot, tile_assignments, orientations, pos, old_labels)
+
+            #Bond code
+            if(bond_edges_verification):
+                print("Beginning bond edge optimization")
+
+                #Timer code
+                if(timer_enabled):
+                    time_initial = time.perf_counter()
+
+                #Solve for bonds
+                pot, tile_assignments, orientations = S2_bonds_hybrid_qvalue(Graph, gurobi_printiouts, optimal_tile_tiles, optimal_tile_bonds)
+                
+                #Timer code
+                if(timer_enabled):
+                    time_final = time.perf_counter()
+                    print("Took " + str(time_final-time_initial) + " seconds")
+                    print("Bond edges optimization:")
+
+                if(pot == False):
+                    print("Bond edge optimization is the same as tile optimization")
+                else:
+                    #Print results
+                    print("Bond edge optimization")
+                    optimal_bond_tiles, optimal_bond_bonds = print_pot(pot, tile_assignments)
+
+                    #Counterexample detection
+                    if(optimal_bond_tiles != optimal_tile_tiles):
+                        print("Optimal bond and tile mismatch")
+                    if(display_graph):
+                        display_orientation(Graph, pot, tile_assignments, orientations, pos, old_labels)
+

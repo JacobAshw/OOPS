@@ -872,7 +872,7 @@ def optimal_pot_s2_brute_force_partition(G, bond_edge_types, num_tiles, print_lo
 
 
 #This is the ILP for scenario 2
-def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal, print_log):
+def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal, print_log, partitions=[]):
     G = Graph
     # Extract some graph info
     degree_sequence = [d for n,d in G.degree()]
@@ -1123,6 +1123,24 @@ def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal,
             for vertex in range(num_verticies):
                 cstr = cstr + vertex_tiles_decision_map.get((vertex, tile))
             m.addConstr(cstr >= 1, name="t"+str(tile)+"_used")
+
+        #Add partition stuff
+        for tile_perm in partitions:
+            # print("ENFORCE: ", tile_perm)
+            # print(tile_perm)
+            nums = []
+            for bond_edge in range(bond_edge_types):
+                cstr = gp.LinExpr()
+                for tile in range(num_tiles):
+                    cstr = cstr + (int(tile_perm[tile]) * tile_bets_map.get((tile, bond_edge, 0)))
+                    cstr = cstr - (int(tile_perm[tile]) * tile_bets_map.get((tile, bond_edge, 1)))
+                valz = m.addVar(lb=-100, ub=100, vtype=GRB.CONTINUOUS, name=str(tile_perm)+str(bond_edge)+str(tile))
+                m.addConstr(cstr == valz)
+                nums.append(valz)
+            val2 = m.addVar(lb=0, ub=100)
+            z = m.addGenConstrNorm(val2, nums, GRB.INFINITY)
+            m.addConstr(val2 >= 1)
+            
 
         # Optimize model
         if(not print_log):

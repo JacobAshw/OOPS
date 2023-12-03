@@ -40,6 +40,7 @@ def find_gcd(list):
     x = reduce(gcd, list)
     return x
 
+#Gets all integer partitions of numbers less than number with length listlen
 def get_glist(number, listlen):
     def ruleAscLen(n, l):
         a = [0 for i in range(n + 1)]
@@ -61,8 +62,6 @@ def get_glist(number, listlen):
 
     gs = [ruleAscLen(x, listlen) for x in range(1, n)]
     # g = ruleAscLen(n, 5)
-
-    print("Number: ", n)
 
     lsts = [[i for i in g] for g in gs]
 
