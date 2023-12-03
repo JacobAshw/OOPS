@@ -3,58 +3,9 @@ import time
 import sys
 import math
 import matplotlib.pyplot as plt
-from OOPS_methods import *
-from OOPS_gurobi import *
-
-
-from math import factorial, gcd
-from functools import reduce
-def find_gcd(list):
-    x = reduce(gcd, list)
-    return x
-def get_glist(number, listlen):
-    def ruleAscLen(n, l):
-        a = [0 for i in range(n + 1)]
-        k = 1
-        a[0] = 0
-        a[1] = n
-        while k != 0:
-            x = a[k - 1] + 1
-            y = a[k] - 1
-            k -= 1
-            while x <= y and k < l - 1:
-                a[k] = x
-                y -= x
-                k += 1
-            a[k] = x + y
-            yield a[:k + 1]
-
-    n = number
-
-    gs = [ruleAscLen(x, listlen) for x in range(1, n)]
-    # g = ruleAscLen(n, 5)
-
-    print("Number: ", n)
-
-    lsts = [[i for i in g] for g in gs]
-
-    for lst in lsts:
-        for elem in lst:
-            while(len(elem)!=listlen):
-                elem.append(0)
-
-    blsts = []
-
-    for lst in lsts:
-        blsts.extend(lst)
-
-    glst = []
-
-    for blst in blsts:
-        # print(blst)
-        glst.extend(itertools.permutations(blst))
-
-    return [g for g in list(set(glst)) if find_gcd(g)==1]
+from OOPS_files.methods import *
+from OOPS_files.algorithms import *
+from OOPS_files.gurobi import *
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------
 # The Optimal Oriented Pot Solver (OOPS)
@@ -74,10 +25,10 @@ version = "1.2"
 # * User Controlled Paramaters
 # Parameters to control the overall program operation and data reporting
 CLI_Enabled = False # * If true, all following parameters are ignored, and command line prompts are used
-display_graph = False # If true, the graph will be displayed before and after computation begins
+display_graph = True # If true, the graph will be displayed before and after computation begins
 timer_enabled = True # If true, there will be intermittent progress reports and total time will be displayed
 gurobi_printiouts = False # If true, gurobi (the ILP solver) will print out its progress. Many ILPs are run over the program, so this will be a lot
-scenario_number = 2 # Which scenario to run (Scenario 1, 2, or 3). Currently, only scenario 1 and 2 are supported
+scenario_number = 1 # Which scenario to run (Scenario 1, 2, or 3). Currently, only scenario 1 and 2 are supported
 one_shot = False
 
 # * Parameters to control the search space of the program.
@@ -101,7 +52,10 @@ tile_types_maximum = math.inf
 # ! ---------------------------------------------------------------------------------------------------
 
 # Graph = nx
-Graph = nx.dodecahedral_graph()
+Graph = nx.cycle_graph(4)
+Graph.add_node(5)
+Graph.add_edge(1, 5)
+Graph.add_edge(2, 5)
 # Graph.add_edge(3, 1)
 # Graph.add_node(4)
 # Graph.add_node(5)
@@ -293,58 +247,33 @@ if(valid_params):
     if(scenario_number == 2):
         #Test code for one-shot
         if(one_shot):
-            if(True):
-                partitions = [list(a) for a in get_glist(5, 4)]
-                # for p in partitions:
-                #     p.append(0)
-                if(timer_enabled):
-                    time_initial = time.perf_counter()
-                while(True):
-                    print("part: ", partitions)
-                    max_tiles = 4
-                    max_bonds = 3
-                    pot, tile_assignments, orientations = optimal_pot_s2_one_shot(Graph, max_bonds, max_tiles, False, partitions)
-                    print(pot)
-                    print(tile_assignments)
-                    minsize, ratios = free_variable_solve(pot, max_bonds)
-                    print("ms: ", minsize)
-                    print("rt: ", ratios)
-                    if(minsize < Graph.number_of_nodes()):
-                        while(len(ratios) < max_tiles):
-                            ratios.append(0)
-                        partitions.append(ratios)
-                        continue
-                    break
-                if(timer_enabled):
-                    time_final = time.perf_counter()
-                    print("Took " + str(time_final-time_initial) + " seconds")
-                if(display_graph):
-                    # Build the digraph to display from the orientation matrix
-                    display_orientation(Graph, pot, tile_assignments, orientations, pos, old_labels)
-            else:
-                if(timer_enabled):
-                    time_initial = time.perf_counter()
-                bond_edge_types = 1
-                tile_types = 1
-                solved = False
-                while not solved:
-                    print("Checking B_2=" + str(bond_edge_types) + ", T_2=" + str(tile_types))
-                    pot, tile_assignments, orientations = optimal_pot_s2_partition(Graph, bond_edge_types, tile_types, False)
-                    if not len(pot) >= 1:
-                        bond_edge_types = bond_edge_types + 1
-                        if(bond_edge_types >= tile_types or bond_edge_types > bond_edge_type_maximum):
-                            bond_edge_types = bond_edge_type_minimum
-                            tile_types = tile_types + 1
-                    else:
-                        break
-                print("Pot: ", pot)
-                print("Tile_assign: ", tile_assignments)
-                if(timer_enabled):
-                    time_final = time.perf_counter()
-                    print("Took " + str(time_final-time_initial) + " seconds")
-                if(display_graph):
-                    # Build the digraph to display from the orientation matrix
-                    display_orientation(Graph, pot, tile_assignments, orientation, pos, old_labels)
+            partitions = [list(a) for a in get_glist(5, 4)]
+            # for p in partitions:
+            #     p.append(0)
+            if(timer_enabled):
+                time_initial = time.perf_counter()
+            while(True):
+                print("part: ", partitions)
+                max_tiles = 4
+                max_bonds = 3
+                pot, tile_assignments, orientations = optimal_pot_s2_one_shot(Graph, max_bonds, max_tiles, False, partitions)
+                print(pot)
+                print(tile_assignments)
+                minsize, ratios = free_variable_solve(pot, max_bonds)
+                print("ms: ", minsize)
+                print("rt: ", ratios)
+                if(minsize < Graph.number_of_nodes()):
+                    while(len(ratios) < max_tiles):
+                        ratios.append(0)
+                    partitions.append(ratios)
+                    continue
+                break
+            if(timer_enabled):
+                time_final = time.perf_counter()
+                print("Took " + str(time_final-time_initial) + " seconds")
+            if(display_graph):
+                # Build the digraph to display from the orientation matrix
+                display_orientation(Graph, pot, tile_assignments, orientations, pos, old_labels)
 
         else:
             #We check if this is a full sweep, which lets us check for T_2, B_2 same-pot conjecture counterexamples later

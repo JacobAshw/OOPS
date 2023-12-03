@@ -3,6 +3,9 @@ import random
 from tkinter import E
 import networkx as nx
 import matplotlib.pyplot as plt
+import itertools
+from math import factorial, gcd
+from functools import reduce
 
 # This file contains methods used by OOPS.py
 # Many functions are isolated here for decluttering of the main file
@@ -19,6 +22,54 @@ def hat(bet):
         return hel[1][hel[0].index(bet)]
     if bet in hel[1]:
         return hel[0][hel[1].index(bet)]
+
+def find_gcd(list):
+    x = reduce(gcd, list)
+    return x
+
+def get_glist(number, listlen):
+    def ruleAscLen(n, l):
+        a = [0 for i in range(n + 1)]
+        k = 1
+        a[0] = 0
+        a[1] = n
+        while k != 0:
+            x = a[k - 1] + 1
+            y = a[k] - 1
+            k -= 1
+            while x <= y and k < l - 1:
+                a[k] = x
+                y -= x
+                k += 1
+            a[k] = x + y
+            yield a[:k + 1]
+
+    n = number
+
+    gs = [ruleAscLen(x, listlen) for x in range(1, n)]
+    # g = ruleAscLen(n, 5)
+
+    print("Number: ", n)
+
+    lsts = [[i for i in g] for g in gs]
+
+    for lst in lsts:
+        for elem in lst:
+            while(len(elem)!=listlen):
+                elem.append(0)
+
+    blsts = []
+
+    for lst in lsts:
+        blsts.extend(lst)
+
+    glst = []
+
+    for blst in blsts:
+        # print(blst)
+        glst.extend(itertools.permutations(blst))
+
+    return [g for g in list(set(glst)) if find_gcd(g)==1]
 
 # Get a list of n different colors, mainly used by OOPS to color the different tile types in the graph
 def get_color_list(num_colors: int) -> list:

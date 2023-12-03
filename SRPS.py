@@ -1,7 +1,7 @@
 import numpy as np
 import gurobipy as gp
 from gurobipy import GRB
-from OOPS_methods import *
+from OOPS_files.methods import *
 import time
 import sys
 

@@ -2,7 +2,7 @@ import networkx as nx
 import gurobipy as gp
 import numpy as np
 from gurobipy import GRB
-from OOPS_methods import *
+from methods import *
 import itertools
 
 # This file holds the ILP solvers for OOPS.py
