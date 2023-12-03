@@ -11,6 +11,19 @@ from functools import reduce
 # Many functions are isolated here for decluttering of the main file
 # See the documentation in OOPS.py for further information
 
+def print_pot(pot, tile_assignments = False):
+    print("-----------------------------------------------------------------------")
+    print("Pot: ", pot)
+    print("Tiles: ", len(pot))
+    bonds = [letter for tile in pot for letter in tile]
+    bonds = list(set(bonds))
+    print("Bond Edge Types: ", len(bonds)/2)
+    if(tile_assignments != False):
+        tile_usages = [len(tile_assignments.get(tile)) for tile in pot]
+        print("tile usages: " + str(tile_usages))
+    print("-----------------------------------------------------------------------")
+    return len(pot), len(bonds)/2
+
 # Make our list of half edges. Lowercase letters represent non-hatted half edges, and uppercase letters are the hatted versions.
 # It is highly unlikely this code will ever solve a graph with more than 26 bond edge types, so alphabetical limitations are ignored
 def get_half_edge_labels() -> tuple[list[chr],list[chr]]:
