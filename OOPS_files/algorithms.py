@@ -2,7 +2,7 @@ from OOPS_files.gurobi import *
 from OOPS_files.methods import *
 
 #Hybrid tuining params
-num_to_partition = 3
+num_to_partition = 1 + 0
 
 def S1_optimal_pot(Graph, gurobi_flag):
     pot, tile_assignments, orientation = optimal_pot_s1(Graph, gurobi_flag)
@@ -38,6 +38,9 @@ def S2_tiles_partition_relaxation(Graph, gurobi_flag):
                 ratios.append(0)
             current_tiles = current_tiles + 1
             continue
+        print(pot)
+        print(orientations)
+        print(tile_assignments)
         minsize, ratios = free_variable_solve(pot, max_bonds)
         if(minsize < Graph.number_of_nodes()):
             while(len(ratios) < max_tiles):

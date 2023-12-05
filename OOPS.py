@@ -2,6 +2,7 @@ import networkx as nx
 import time
 import sys
 import math
+import configparser
 import matplotlib.pyplot as plt
 from OOPS_files.methods import *
 from OOPS_files.algorithms import *
@@ -39,7 +40,7 @@ bond_edges_verification = True
 # hybrid-qvalue
 # hybrid-canonical
 
-method = "hybrid-qvalue"
+method = "partition"
 
 # * Below is an area sectioned off for building the target graph
 # We use the networkx library (v3.1) for storing graphs (https://networkx.org/)
@@ -52,13 +53,13 @@ method = "hybrid-qvalue"
 # ! ---------------------------------------------------------------------------------------------------
 
 # Graph = nx
-Graph = nx.cycle_graph(4)
-Graph.add_node(5)
-Graph.add_edge(1, 5)
-Graph.add_edge(2, 5)
-
-
-Graph = nx.dodecahedral_graph()
+# Graph = nx.cycle_graph(4)
+# Graph.add_node(5)
+# Graph.add_edge(1, 5)
+# Graph.add_edge(2, 5)
+Graph = nx.lollipop_graph(4, 3)
+# Graph = nx.cycle_graph(10)
+# Graph = nx.dodecahedral_graph()
 # Graph.add_edge(3, 1)
 # Graph.add_node(4)
 # Graph.add_node(5)
