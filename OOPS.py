@@ -3,6 +3,7 @@ import time
 import sys
 import math
 import configparser
+from matplotlib import pyplot as plt
 import matplotlib.pyplot as plt
 from OOPS_files.methods import *
 from OOPS_files.algorithms import *
@@ -45,19 +46,22 @@ bond_edges_verification = config.getboolean('bond_edges_verification')
 # (5) hybrid-qvalue
 # (6) hybrid-canonical
 method = ""
-match config.getint('method'):
-    case 1:
-        method = "qvalue"
-    case 2:
-        method = "oneshot"
-    case 3:
-        method = "partition"
-    case 4:
-        method = "canonical"
-    case 5:
-        method = "hybrid-quvalue"
-    case 6:
-        method = "hybrid-canonical"
+methodnum = config.getint('method')
+if(methodnum==1):
+    method = "qvalue"
+if(methodnum==2):
+    method = "oneshot"
+if(methodnum==3):
+    method = "partition"
+if(methodnum==4):
+    method = "canonical"
+if(methodnum==5):
+    method = "hybrid-quvalue"
+if(methodnum==6):
+    method = "hybrid-canonical"
+
+inputfile = config['inputfile']
+outputfile = config['outputfile']
 
 # * Below is an area sectioned off for building the target graph
 # We use the networkx library (v3.1) for storing graphs (https://networkx.org/)
