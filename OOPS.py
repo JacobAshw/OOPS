@@ -23,24 +23,41 @@ version = "2.0"
 # The ILP solver used by this codebase is the Gurobi optimizer (https://www.gurobi.com/solutions/gurobi-optimizer/), v10.0
 # ---------------------------------------------------------------------------------------------------------------------------------------------------
 
-# * User Controlled Paramaters
-# Parameters to control the overall program operation and data reporting
-CLI_Enabled = False # * If true, all following parameters are ignored, and command line prompts are used
-display_graph = True # If true, the graph will be displayed before and after computation begins
-timer_enabled = True # If true, there will be intermittent progress reports and total time will be displayed
-gurobi_printiouts = False # If true, gurobi (the ILP solver) will print out its progress. Many ILPs are run over the program, so this will be a lot
-scenario_number = 2 # Which scenario to run (Scenario 1, 2, or 3). Currently, only scenario 1 and 2 are supported
-bond_edges_verification = True
+config_reader = configparser.ConfigParser()
+config_reader.read('config.ini')
+# print(config_reader.sections())
 
-# * Solving methods
-# qvalue
-# oneshot
-# partition
-# canonical
-# hybrid-qvalue
-# hybrid-canonical
+config = config_reader['Instance']
 
-method = "partition"
+print(config['CLI_Enabled'])
+
+CLI_Enabled = config.getboolean('CLI_Enabled')
+display_graph = config.getboolean('display_graph') 
+timer_enabled = config.getboolean('timer_enabled') 
+gurobi_printiouts = config.getboolean('gurobi_printouts')
+scenario_number = config.getint('scenario_number') 
+bond_edges_verification = config.getboolean('bond_edges_verification')
+
+# (1) qvalue
+# (2) oneshot
+# (3) partition
+# (4) canonical
+# (5) hybrid-qvalue
+# (6) hybrid-canonical
+method = ""
+match config.getint('method'):
+    case 1:
+        method = "qvalue"
+    case 2:
+        method = "oneshot"
+    case 3:
+        method = "partition"
+    case 4:
+        method = "canonical"
+    case 5:
+        method = "hybrid-quvalue"
+    case 6:
+        method = "hybrid-canonical"
 
 # * Below is an area sectioned off for building the target graph
 # We use the networkx library (v3.1) for storing graphs (https://networkx.org/)
