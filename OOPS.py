@@ -206,13 +206,13 @@ if(valid_params):
 
             #Solve for bonds
             if(method == "oneshot"):
-                b_pot, b_tile_assignments, b_orientations = S2_bonds_brute_force_partition(Graph, gurobi_printiouts)
+                b_pot, b_tile_assignments, b_orientations = S2_bonds_brute_force_partition(Graph, gurobi_printiouts, optimal_tile_tiles, optimal_tile_bonds)
             elif(method == "partition"):
-                b_pot, b_tile_assignments, b_orientations = S2_bonds_partition_relaxation(Graph, gurobi_printiouts)
+                b_pot, b_tile_assignments, b_orientations = S2_bonds_partition_relaxation(Graph, gurobi_printiouts, optimal_tile_tiles, optimal_tile_bonds)
             elif(method == "qvalue"):
-                b_pot, b_tile_assignments, b_orientations = S2_bonds_qvalue(Graph, gurobi_printiouts)
+                b_pot, b_tile_assignments, b_orientations = S2_bonds_qvalue(Graph, gurobi_printiouts, optimal_tile_tiles, optimal_tile_bonds)
             elif(method == "hybrid-quvalue"):
-                b_pot, b_tile_assignments, b_orientations = S2_bonds_hybrid_qvalue(Graph, gurobi_printiouts)
+                b_pot, b_tile_assignments, b_orientations = S2_bonds_hybrid_qvalue(Graph, gurobi_printiouts, optimal_tile_tiles, optimal_tile_bonds)
 
             #Timer code
             if(timer_enabled):
