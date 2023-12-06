@@ -36,8 +36,6 @@ config_reader.read(config_path)
 
 config = config_reader['Instance']
 
-print(config['CLI_Enabled'])
-
 CLI_Enabled = config.getboolean('CLI_Enabled')
 display_graph = config.getboolean('display_graph') 
 timer_enabled = config.getboolean('timer_enabled') 
@@ -227,6 +225,9 @@ if(valid_params):
 
                 optimal_bond_bonds = optimal_tile_bonds
                 optimal_bond_tiles = optimal_tile_tiles
+                b_pot = ""
+                b_tile_assignments = ""
+                b_orientations = ""
             else:
                 t2_b2_match = False
                 #Print results
