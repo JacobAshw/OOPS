@@ -221,9 +221,12 @@ if(valid_params):
                 b_time = time_final - time_initial
 
             #Print results
-            if(pot == False):
+            if(b_pot == False):
                 print("Bond edge optimization is the same as tile optimization")
                 t2_b2_match = True
+
+                optimal_bond_bonds = optimal_tile_bonds
+                optimal_bond_tiles = optimal_tile_tiles
             else:
                 t2_b2_match = False
                 #Print results
