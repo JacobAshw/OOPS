@@ -214,14 +214,14 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
         pot = []
         tile_assignments = {}
         for tile_num in range(num_tiles):
-            if(int(k_map.get((tile_num)).X) == 1):
-                tile = 'a' * int(tile_bets_map.get((tile_num, 0)).X)
-                tile = tile + 'A' * int(tile_bets_map.get((tile_num, 1)).X)
+            if(int(0.1 + k_map.get((tile_num)).X) == 1):
+                tile = 'a' * int(0.1 + tile_bets_map.get((tile_num, 0)).X)
+                tile = tile + 'A' * int(0.1 + tile_bets_map.get((tile_num, 1)).X)
                 pot.append(tile)
                 tile_assignments.update({tile : []})
                 #add each vertex assigned to the tile
                 for vertex in range(num_verticies):
-                    if(vertex_tiles_decision_map.get((vertex, tile_num)).X == 1):
+                    if(int(0.1 + vertex_tiles_decision_map.get((vertex, tile_num)).X) == 1):
                         tile_assignments.get(tile).append(vertex)
 
         # Build the edges of the orientation of the graph
@@ -233,7 +233,7 @@ def optimal_pot_s1(G: nx.Graph, print_log: bool) -> list[str]:
                 for othervertex in range(num_verticies):
                     #Since the edge list only has one copy of each edge, we must check both directions
                     if((vertex, othervertex) in edge_list or (othervertex, vertex) in edge_list):
-                        this_row.append(edge_constraints_map.get((vertex, othervertex, 0)).X)
+                        this_row.append(int(0.1 + edge_constraints_map.get((vertex, othervertex, 0)).X))
                     else:
                         this_row.append(0)
                 orientation.append(this_row)
@@ -325,12 +325,6 @@ def optimal_pot_s2_relaxation_partition(G, bond_edge_types, max_tiles, print_log
             name = "k_tile" + str(tile)
             x = m.addVar(vtype=GRB.BINARY, name=name)
             k_map.update({(tile) : x})
-
-        # For each tile type, create a corresponding u var
-        # for tile in range(max_tiles):
-        #     name = "u_tile" + str(tile)
-        #     x = m.addVar(vtype=GRB.BINARY, name=name)
-        #     u_map.update({(tile) : x})
 
         # For each side of each edge, create vars of each bet
         for edge in edge_list:
@@ -479,7 +473,7 @@ def optimal_pot_s2_relaxation_partition(G, bond_edge_types, max_tiles, print_log
                 for tile in range(max_tiles):
                     cstr = cstr + (int(tile_perm[tile]) * tile_bets_map.get((tile, bond_edge, 0)))
                     cstr = cstr - (int(tile_perm[tile]) * tile_bets_map.get((tile, bond_edge, 1)))
-                valz = m.addVar(lb=-100, ub=100, vtype=GRB.CONTINUOUS, name=str(tile_perm)+str(bond_edge)+str(tile))
+                valz = m.addVar(lb=-100, ub=100, vtype=GRB.INTEGER, name=str(tile_perm)+str(bond_edge)+str(tile))
                 m.addConstr(cstr == valz)
                 nums.append(valz)
             val2 = m.addVar(lb=0, ub=100)
@@ -501,22 +495,28 @@ def optimal_pot_s2_relaxation_partition(G, bond_edge_types, max_tiles, print_log
                 print("Status of optimization: ", m.status)
                 return None
 
+        # for tile_num in range(max_tiles):
+        #     print("Tile: " + str(tile_num))
+        #     for bond_edge in range(bond_edge_types):
+        #         print("Bond edge " + str(bond_edge) + " :" + str(tile_bets_map.get((tile_num, bond_edge, 0)).X))
+        #         print("Bond edge " + str(bond_edge) + " hat :" + str(tile_bets_map.get((tile_num, bond_edge, 1)).X))
+
         # * Construct our pot and orientation, and return it----------------------------------------------------------
         # Get our dictionary of tile assignments and build our pot
         pot = []
         tile_assignments = {}
         for tile_num in range(max_tiles):
-            if(int(k_map.get((tile_num)).X) == 1):
+            if(int(0.1 + k_map.get((tile_num)).X) >= 1):
             # if(True):
                 tile = ''
                 for bond_edge in range(bond_edge_types):
-                    tile = tile + half_edges[bond_edge] * int(tile_bets_map.get((tile_num, bond_edge, 0)).X)
-                    tile = tile + half_edges_hat[bond_edge] * int(tile_bets_map.get((tile_num, bond_edge, 1)).X)
+                    tile = tile + half_edges[bond_edge] * int(0.1 + tile_bets_map.get((tile_num, bond_edge, 0)).X)
+                    tile = tile + half_edges_hat[bond_edge] * int(0.1 + tile_bets_map.get((tile_num, bond_edge, 1)).X)
                 pot.append(tile)
                 tile_assignments.update({tile : []})
                 #add each vertex assigned to the tile
                 for vertex in range(num_verticies):
-                    if(vertex_tiles_decision_map.get((vertex, tile_num)).X == 1):
+                    if(int( 0.1 + vertex_tiles_decision_map.get((vertex, tile_num)).X) >= 1):
                         tile_assignments.get(tile).append(vertex)
 
         # Build the edges of the orientation of the graph
@@ -528,7 +528,7 @@ def optimal_pot_s2_relaxation_partition(G, bond_edge_types, max_tiles, print_log
                 for othervertex in range(num_verticies):
                     #Since the edge list only has one copy of each edge, we must check both directions
                     if((vertex, othervertex) in edge_list or (othervertex, vertex) in edge_list):
-                        this_row.append(edge_constraints_map.get((vertex, othervertex, bond_edge, 0)).X)
+                        this_row.append(int(0.1 + edge_constraints_map.get((vertex, othervertex, bond_edge, 0)).X))
                     else:
                         this_row.append(0)
                 orientation.append(this_row)
@@ -837,16 +837,16 @@ def optimal_pot_s2_brute_force_partition(G, bond_edge_types, num_tiles, print_lo
         pot = []
         tile_assignments = {}
         for tile_num in range(num_tiles):
-            if(int(k_map.get((tile_num)).X) == 1):
+            if(int(0.1 + k_map.get((tile_num)).X) == 1):
                 tile = ''
                 for bond_edge in range(bond_edge_types):
-                    tile = tile + half_edges[bond_edge] * int(tile_bets_map.get((tile_num, bond_edge, 0)).X)
-                    tile = tile + half_edges_hat[bond_edge] * int(tile_bets_map.get((tile_num, bond_edge, 1)).X)
+                    tile = tile + half_edges[bond_edge] * int(0.1 + tile_bets_map.get((tile_num, bond_edge, 0)).X)
+                    tile = tile + half_edges_hat[bond_edge] * int(0.1 + tile_bets_map.get((tile_num, bond_edge, 1)).X)
                 pot.append(tile)
                 tile_assignments.update({tile : []})
                 #add each vertex assigned to the tile
                 for vertex in range(num_verticies):
-                    if(vertex_tiles_decision_map.get((vertex, tile_num)).X == 1):
+                    if(int( 0.1 + vertex_tiles_decision_map.get((vertex, tile_num)).X) == 1):
                         tile_assignments.get(tile).append(vertex)
 
         # Build the edges of the orientation of the graph
@@ -858,7 +858,7 @@ def optimal_pot_s2_brute_force_partition(G, bond_edge_types, num_tiles, print_lo
                 for othervertex in range(num_verticies):
                     #Since the edge list only has one copy of each edge, we must check both directions
                     if((vertex, othervertex) in edge_list or (othervertex, vertex) in edge_list):
-                        this_row.append(edge_constraints_map.get((vertex, othervertex, bond_edge, 0)).X)
+                        this_row.append(int(0.1 + edge_constraints_map.get((vertex, othervertex, bond_edge, 0)).X))
                     else:
                         this_row.append(0)
                 orientation.append(this_row)
@@ -1166,16 +1166,16 @@ def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal,
         pot = []
         tile_assignments = {}
         for tile_num in range(num_tiles):
-            if(int(k_map.get((tile_num)).X) == 1):
+            if(int(0.1 + k_map.get((tile_num)).X) == 1):
                 tile = ''
                 for bond_edge in range(bond_edge_types):
-                    tile = tile + half_edges[bond_edge] * int(tile_bets_map.get((tile_num, bond_edge, 0)).X)
-                    tile = tile + half_edges_hat[bond_edge] * int(tile_bets_map.get((tile_num, bond_edge, 1)).X)
+                    tile = tile + half_edges[bond_edge] * int(0.1 + tile_bets_map.get((tile_num, bond_edge, 0)).X)
+                    tile = tile + half_edges_hat[bond_edge] * int(0.1 + tile_bets_map.get((tile_num, bond_edge, 1)).X)
                 pot.append(tile)
                 tile_assignments.update({tile : []})
                 #add each vertex assigned to the tile
                 for vertex in range(num_verticies):
-                    if(vertex_tiles_decision_map.get((vertex, tile_num)).X == 1):
+                    if(int(0.1 + vertex_tiles_decision_map.get((vertex, tile_num)).X) == 1):
                         tile_assignments.get(tile).append(vertex)
 
         # Build the edges of the orientation of the graph
@@ -1187,7 +1187,7 @@ def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal,
                 for othervertex in range(num_verticies):
                     #Since the edge list only has one copy of each edge, we must check both directions
                     if((vertex, othervertex) in edge_list or (othervertex, vertex) in edge_list):
-                        this_row.append(edge_constraints_map.get((vertex, othervertex, bond_edge, 0)).X)
+                        this_row.append(int(0.1 + edge_constraints_map.get((vertex, othervertex, bond_edge, 0)).X))
                     else:
                         this_row.append(0)
                 orientation.append(this_row)

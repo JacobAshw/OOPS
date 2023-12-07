@@ -2,7 +2,7 @@ from OOPS_files.gurobi import *
 from OOPS_files.methods import *
 
 #Hybrid tuining params
-num_to_partition = 1 + 0
+num_to_partition = 1 + 1
 
 def S1_optimal_pot(Graph, gurobi_flag):
     pot, tile_assignments, orientation = optimal_pot_s1(Graph, gurobi_flag)
