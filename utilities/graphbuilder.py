@@ -15,11 +15,7 @@ import matplotlib.pyplot as plt
 # ! ---------------------------------------------------------------------------------------------------
 
 # Graph = nx
-G = nx.cycle_graph(4)
-G.add_node(5)
-G.add_edge(1, 5)
-G.add_edge(2, 5)
-G.add_node(6)
+G = nx.cycle_graph(10)
 # Graph = nx.lollipop_graph(4, 3)
 # Graph = nx.cycle_graph(10)
 # Graph = nx.dodecahedral_graph()
