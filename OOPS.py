@@ -181,6 +181,10 @@ if(valid_params):
             t_pot, t_tile_assignments, t_orientations = S2_tiles_qvalue(Graph, gurobi_printiouts)
         elif(method == "hybrid-quvalue"):
             t_pot, t_tile_assignments, t_orientations = S2_tiles_hybrid_qvalue(Graph, gurobi_printiouts)
+        elif(method == "canonical"):
+            t_pot, t_tile_assignments, t_orientations = S2_tiles_canonical(Graph, gurobi_printiouts)
+        # elif(method == "hybrid-canonical"):
+        #     t_pot, t_tile_assignments, t_orientations = S2_tiles_hybrid_canonical(Graph, gurobi_printiouts)
         
         #Timer code
         if(timer_enabled):
@@ -211,6 +215,10 @@ if(valid_params):
                 b_pot, b_tile_assignments, b_orientations = S2_bonds_qvalue(Graph, gurobi_printiouts, optimal_tile_tiles, optimal_tile_bonds)
             elif(method == "hybrid-quvalue"):
                 b_pot, b_tile_assignments, b_orientations = S2_bonds_hybrid_qvalue(Graph, gurobi_printiouts, optimal_tile_tiles, optimal_tile_bonds)
+            elif(method == "canonical"):
+                b_pot, b_tile_assignments, b_orientations = S2_bonds_canonical(Graph, gurobi_printiouts, optimal_tile_tiles, optimal_tile_bonds)
+            # elif(method == "hybrid-canonical"):
+            #     b_pot, b_tile_assignments, b_orientations = S2_bonds_hybrid_canonical(Graph, gurobi_printiouts, optimal_tile_tiles, optimal_tile_bonds)
 
             #Timer code
             if(timer_enabled):

@@ -1,0 +1,2 @@
+Graph,Methodnum,T_2 Value,T_2 Bonds,T_2 Pot,T_2 Pot Ratios,T_2 Orientation,B_2 Value,B_2 Tiles,B_2 Pot,B_2 Pot Ratios,B_2 Orientation,SamePot,TileTime,BondTime
+C~,3,2,1.0,"['aaa', 'aAA']","{'aaa': [1], 'aAA': [0, 2, 3]}","[[[0, 0, 0, 1], [1, 0, 1, 1], [1, 0, 0, 0], [0, 0, 1, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]",1.0,2,,,,True,0.08316629999998781,3.74000000107344e-05

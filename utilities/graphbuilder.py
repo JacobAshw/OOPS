@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 # ! ---------------------------------------------------------------------------------------------------
 
 # Graph = nx
-G = nx.cycle_graph(10)
-# Graph = nx.lollipop_graph(4, 3)
+G = nx.karate_club_graph()
+# G = nx.complete_graph(5)
 # Graph = nx.cycle_graph(10)
 # Graph = nx.dodecahedral_graph()
 # Graph.add_edge(3, 1)

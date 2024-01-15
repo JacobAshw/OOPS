@@ -1204,6 +1204,430 @@ def optimal_pot_s2(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal,
     except gp.GurobiError as e:
         print('Error code ' + str(e.errno) + ': ' + str(e))
 
+def optimal_pot_s2_canonical(Graph, bond_edge_types, num_tiles, min_qs, q_and_under_equal, print_log, partitions=[]):
+    G = Graph
+    # Extract some graph info
+    degree_sequence = [d for n,d in G.degree()]
+    degree_sequence.sort()
+    different_degrees = list(set(degree_sequence))
+    num_verticies = G.number_of_nodes()
+    edge_list = list(G.edges())
+
+    def deg(node):
+        deg = 0
+        for edge in edge_list:
+            if(node in edge):
+                deg = deg + 1
+        return deg
+
+    def other_node(node, edge):
+        if(edge[0]==node):
+            return edge[1]
+        elif(edge[1]==node):
+            return edge[0]
+    try:
+        # Create a new model
+        m = gp.Model("optimal_pot_s2")
+
+        # Create the dictionaries of variables
+        # indexing: (vertex, bet, hat)
+        vertex_bets_map = {}
+        # indexing: (tile, bet, hat)
+        tile_bets_map = {}
+        # indexing: (vertex, tile)
+        vertex_tiles_decision_map = {}
+        # indexing: (tile)
+        k_map = {}
+        # indexing: (vertex_from, vertex_to, bet, hat)
+        edge_constraints_map = {}
+
+        # * Create variables
+        # make a variable for each bond edge of each vertex
+        for vertex in range(num_verticies):
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    name = "node" + str(vertex) + "bet" + str(bond_edge) + ":" + str(hat) 
+                    x = m.addVar(vtype=GRB.INTEGER, lb=0, name=name)
+                    vertex_bets_map.update({(vertex, bond_edge, hat) : x})
+
+        # make a variable for each bond edge of each tile
+        for tile in range(num_tiles):
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    # name = "tile" + str(degree) + ":" + str(tile) + "bet" + str(bond_edge) + ":" + str(hat) 
+                    name = "!" + "," + str(tile) + "," + str(bond_edge) + "," + str(hat)
+                    x = m.addVar(vtype=GRB.INTEGER, lb=0, name=name)
+                    tile_bets_map.update({(tile, bond_edge, hat) : x})
+
+        # For each pair (vertex and tile), create a decision var
+        for vertex in range(num_verticies):
+            for tile in range(num_tiles):
+                name = "node" +  str(vertex) + "istile" + str(tile)
+                x = m.addVar(vtype=GRB.BINARY, name=name)
+                vertex_tiles_decision_map.update({(vertex, tile) : x})
+
+        # For each tile type, create a corresponding k var
+        for tile in range(num_tiles):
+            name = "k_tile" + str(tile)
+            x = m.addVar(vtype=GRB.BINARY, name=name)
+            k_map.update({(tile) : x})
+
+        # For each side of each edge, create vars of each bet
+        for edge in edge_list:
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    # normal orientation
+                    name = str(edge) + "b" + str(bond_edge) + ":" + str(hat)
+                    x = m.addVar(vtype=GRB.INTEGER, lb=0, name=name)
+                    edge_constraints_map.update({(edge[0], edge[1], bond_edge, hat) : x})
+                    # reverse orientation
+                    edge_swap = (edge[1], edge[0])
+                    name2 = str(edge_swap) + "b" + str(bond_edge) + ":" + str(hat)
+                    x2 = m.addVar(vtype=GRB.INTEGER, lb=0, name=name2)
+                    edge_constraints_map.update({(edge_swap[0], edge_swap[1], bond_edge, hat) : x2})
+
+        # * Make our objective(s) 
+        # Minimize over each q, starting with tile 1
+        l = max(different_degrees) + 1
+        qs = []
+        for index,tile in enumerate(range(num_tiles)):
+            q = gp.LinExpr()
+            coeff = pow(l, 2*bond_edge_types-1)
+            for bet in range(bond_edge_types):
+                for hat in range(2):
+                    q = q + coeff * tile_bets_map.get((tile, bet, hat))
+                    coeff = coeff / l
+            qs.append(q)
+            m.setObjectiveN(q, index, num_tiles-index)
+
+        # * Make our constraints
+        # Make sure we don't exceed min_pot_size
+        obj = gp.LinExpr()
+        for k_key in list(k_map.keys()):
+            k = k_map.get(k_key)
+            obj = obj + k
+        m.addConstr(obj >= num_tiles, "min_pot_size_limit")
+
+        qbounds = []
+        # Make sure we don't exceed min_q
+        for tile in range(num_tiles):
+            # print(min_qs[index])
+            q = gp.LinExpr()
+            coeff = pow(l, 2*bond_edge_types-1)
+            for bet in range(bond_edge_types):
+                for hat in range(2):
+                    q = q + coeff * tile_bets_map.get((tile, bet, hat))
+                    coeff = coeff / l
+            # print(q)
+            # print(min_qs[tile])
+            c = m.addConstr(q >= min_qs[tile], "minimum q-value " + str(tile))
+            qbounds.append(c)
+
+        # Force equality below q_and_under_equal
+        for tile in range(q_and_under_equal):
+            q = gp.LinExpr()
+            coeff = pow(l, 2*bond_edge_types-1)
+            for bet in range(bond_edge_types):
+                for hat in range(2):
+                    q = q + coeff * tile_bets_map.get((tile, bet, hat))
+                    coeff = coeff / l
+            c = m.addConstr(q == min_qs[tile], "force q-value " + str(tile))
+            qbounds.append(c)
+
+        # Add constraint: same number of each bond edge type in all verticies (a graph can be made)
+        for bond_edge in range(bond_edge_types):
+            cstr = gp.LinExpr()
+            for vertex in range(num_verticies):
+                bet_no_hat = vertex_bets_map.get((vertex, bond_edge, 0))
+                bet_hat = vertex_bets_map.get((vertex, bond_edge, 1))
+                cstr = cstr + bet_no_hat - bet_hat
+            m.addConstr(cstr == 0, "bond_edge_aA_match_"+str(bond_edge))
+
+        # Add constraint: tiles are assigned to verticies of the correct degree
+        for vertex in range(num_verticies):
+            for tile in range(num_tiles):
+                cstr = gp.LinExpr()
+                for bond_edge in range(bond_edge_types):
+                    for hat in range(2):
+                        cstr = cstr + vertex_bets_map.get((vertex, bond_edge, hat))
+                        cstr = cstr - tile_bets_map.get((tile, bond_edge, hat))
+                m.addGenConstrIndicator(vertex_tiles_decision_map.get((vertex, tile)), True, cstr == 0, name="v"+str(vertex)+"t"+str(tile)+"chosen_degree_match")
+                            # m.addGenConstrIndicator(k_map.get((tile)), True, cstr >= 1, name="strictly_decreasing_a_t"+str(tile))
+
+        
+        # # Add constraint: verticies have bond edges equal to degree
+        for vertex in range(num_verticies):
+            cstr = gp.LinExpr()
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    cstr = cstr + vertex_bets_map.get((vertex, bond_edge, hat))
+            m.addConstr(cstr == deg(vertex), "vertex_"+str(vertex)+"_bets_match_degree")
+        
+        # # Each vertex must be exactly one tile type
+        for vertex in range(num_verticies):
+            cstr = gp.LinExpr()
+            for tile in range(num_tiles):
+                cstr = cstr + vertex_tiles_decision_map.get((vertex, tile))
+            m.addConstr(cstr == 1, "v"+str(vertex)+"_one_tile_type")
+        
+        # # Enforce tile selections
+        for vertex in range(num_verticies):
+            for tile in range(num_tiles):
+                for bond_edge in range(bond_edge_types):
+                    for hat in range(2):
+                        cstr = gp.LinExpr()
+                        cstr = cstr + vertex_bets_map.get((vertex, bond_edge, hat))
+                        cstr = cstr - tile_bets_map.get((tile, bond_edge, hat))
+                        for othertile in range(num_tiles):
+                            if(othertile!=tile):
+                                cstr = cstr - max(different_degrees) * vertex_tiles_decision_map.get((vertex, othertile))
+                        m.addConstr(cstr <= 0, "enforce_tile_selection_v"+str(vertex)+"t"+str(tile)+"b"+str(bond_edge)+":"+str(hat))
+
+        # # Ks count tiles used
+        for tile in range(num_tiles):
+            cstr = gp.LinExpr()
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    cstr = cstr + tile_bets_map.get((tile, bond_edge, hat))
+            cstr = cstr - max(different_degrees) * k_map.get((tile))
+            m.addConstr(cstr <= 0, name="k_count_tile"+","+str(tile))
+
+        # # Edges respect verticies
+        for vertex in range(num_verticies):
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    cstr = gp.LinExpr()
+                    cstr = cstr + vertex_bets_map.get((vertex, bond_edge, hat))
+                    for edge in edge_list:
+                        if vertex in edge:
+                            other = other_node(vertex, edge)
+                            cstr = cstr - edge_constraints_map.get((vertex, other, bond_edge, hat))
+                    m.addConstr(cstr == 0, name="edge_respect_verticies_"+str(vertex)+"b"+str(bond_edge)+":"+str(hat))
+
+        # # Each edge has a 2 bond edge exactly
+        for edge in edge_list:
+            cstr = gp.LinExpr()
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    cstr = cstr + edge_constraints_map.get((edge[0], edge[1], bond_edge, hat))
+                    cstr = cstr + edge_constraints_map.get((edge[1], edge[0], bond_edge, hat))
+            m.addConstr(cstr == 2, name="edge_"+str(edge)+"_2bet")
+
+        # Edges can be built
+        for edge in edge_list:
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    if(hat == 0):
+                        hat2 = 1
+                    else:
+                        hat2 = 0
+                    cstr = gp.LinExpr()
+                    cstr = cstr + edge_constraints_map.get((edge[0], edge[1], bond_edge, hat))
+                    cstr = cstr - edge_constraints_map.get((edge[1], edge[0], bond_edge, hat2))
+                    m.addConstr(cstr == 0, name="edge_"+str(edge)+"_bet_"+str(bond_edge)+"_built")
+
+        # * Limit our solution pool
+        #------------------------ CANONICAL -----------------------------------------
+        #! First, order tiles
+        # Tiles are first ordered by size (decreasing, so largest first)
+        for tile in range(num_tiles-1):
+            cstr = gp.LinExpr()
+            #Add this tile's size
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    cstr = cstr + tile_bets_map.get((tile, bond_edge, hat))
+            #Subtract the next tile's size
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    cstr = cstr - tile_bets_map.get((tile+1, bond_edge, hat))
+            #This must be at least 0
+            m.addConstr(cstr >= 0)
+
+        for vertex in range(num_verticies):
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    name = "node" + str(vertex) + "bet" + str(bond_edge) + ":" + str(hat) 
+                    x = m.addVar(vtype=GRB.INTEGER, lb=0, name=name)
+                    vertex_bets_map.update({(vertex, bond_edge, hat) : x})
+
+        # set up indicators for tiebreaker
+        indicators = []
+        for tile in range(num_tiles-1):
+            x = m.addVar(vtype=GRB.BINARY)
+            indicators.append(x)
+
+            cstr = gp.LinExpr()
+            #Add this tile's size
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    cstr = cstr + tile_bets_map.get((tile, bond_edge, hat))
+            #Subtract the next tile's size
+            for bond_edge in range(bond_edge_types):
+                for hat in range(2):
+                    cstr = cstr - tile_bets_map.get((tile+1, bond_edge, hat))
+
+            cstr = cstr - l * x
+
+            #If they are equal, the indicator is off. If they are unequal, indicator is on.
+            m.addConstr(cstr <= 0)
+            m.addConstr(cstr >= (-1 * l) + 1)
+
+        #Order the ties by number of As, then Bs, then Cs, ... (if indicator is off)
+        for tile in range(num_tiles-1):
+            thisscore = gp.LinExpr()
+            nextscore = gp.LinExpr()
+
+            mul = 1
+            for bond_edge in range(bond_edge_types):
+                thisscore = thisscore + mul * tile_bets_map.get((tile, bond_edge, 0))
+                thisscore = thisscore + mul * tile_bets_map.get((tile, bond_edge, 1))
+
+                nextscore = nextscore + mul * tile_bets_map.get((tile + 1, bond_edge, 0))
+                nextscore = nextscore + mul * tile_bets_map.get((tile + 1, bond_edge, 1))
+                mul = mul * (max(different_degrees) + 1)
+            
+            #if indicator off, this score has to be bigger
+            m.addGenConstrIndicator(indicators[tile], False, thisscore >= nextscore)     
+
+        #! Then, order bonds
+        #Number of As > Number of Bs > Number of Cs > ...
+        for bond_edge in range(bond_edge_types-1):
+            cstr = gp.LinExpr()
+            for tile in range(num_tiles):
+                cstr = cstr + tile_bets_map.get((tile, bond_edge, 0))
+                cstr = cstr + tile_bets_map.get((tile, bond_edge, 1))
+            for tile in range(num_tiles):
+                cstr = cstr - tile_bets_map.get((tile, bond_edge+1, 0))
+                cstr = cstr - tile_bets_map.get((tile, bond_edge+1, 1))
+            m.addConstr(cstr >= 0)
+
+        #! ehh idk
+        # for tile in range(num_tiles-1):
+        #     cstr = gp.LinExpr()
+        #     coeff = 0
+        #     for bond_edge in range(bond_edge_types-1):
+        #         for hat in range(1):
+        #             if(coeff == 0):
+        #                 coeff = 1
+        #             else:
+        #                 coeff = coeff * l
+        #             cstr = cstr + coeff * tile_bets_map.get((tile, bond_edge, hat))
+        #             cstr = cstr - coeff * tile_bets_map.get((tile+1, bond_edge, hat))
+        #     m.addGenConstrIndicator(k_map.get((tile)), True, cstr >= 0, name="strictly_decreasing_a_t"+str(tile))
+
+        #! Then, order hats
+        # A >= hatA, B >= hatB, C >= hatC
+        for bond_edge in range(bond_edge_types):
+            cstr = gp.LinExpr()
+            for tile in range(num_tiles):
+                #Add number of unhatted
+                cstr = cstr + tile_bets_map.get((tile, bond_edge, 0))
+                #Subtract number hatted
+                cstr = cstr - tile_bets_map.get((tile, bond_edge, 1))
+            #Must be at least 0
+            m.addConstr(cstr >= 0)
+
+
+
+        #------------------------ CANONICAL -----------------------------------------
+
+        # Use each bond edge type in a tile
+        for bond_edge in range(bond_edge_types):
+            for hat in range(2):
+                cstr = gp.LinExpr()
+                for tile in range(num_tiles):
+                    cstr = cstr + tile_bets_map.get((tile, bond_edge, hat))
+                m.addConstr(cstr >= 1, "bet_"+str(bond_edge)+":"+str(hat)+"_used")
+
+        # Use each tile
+        for tile in range(num_tiles):
+            cstr = gp.LinExpr()
+            for vertex in range(num_verticies):
+                cstr = cstr + vertex_tiles_decision_map.get((vertex, tile))
+            m.addConstr(cstr >= 1, name="t"+str(tile)+"_used")
+
+        #Add partition stuff
+        for tile_perm in partitions:
+            # print("ENFORCE: ", tile_perm)
+            # print(tile_perm)
+            nums = []
+            for bond_edge in range(bond_edge_types):
+                cstr = gp.LinExpr()
+                for tile in range(num_tiles):
+                    cstr = cstr + (int(tile_perm[tile]) * tile_bets_map.get((tile, bond_edge, 0)))
+                    cstr = cstr - (int(tile_perm[tile]) * tile_bets_map.get((tile, bond_edge, 1)))
+                valz = m.addVar(lb=-100, ub=100, vtype=GRB.CONTINUOUS, name=str(tile_perm)+str(bond_edge)+str(tile))
+                m.addConstr(cstr == valz)
+                nums.append(valz)
+            val2 = m.addVar(lb=0, ub=100)
+            z = m.addGenConstrNorm(val2, nums, GRB.INFINITY)
+            m.addConstr(val2 >= 1)
+            
+
+        # Optimize model
+        if(not print_log):
+            m.setParam(GRB.Param.LogToConsole, 0)
+
+        m.setParam(GRB.Param.Symmetry, 2)
+
+        m.optimize()
+
+
+
+        # Turn our solutions into pots
+        half_edges, half_edges_hat = get_half_edge_labels()
+        if(m.status != 2):
+            if(m.status == 3):
+                return [], [], [], [], [] #
+            else:
+                print("Status of optimization: ", m.status)
+                return None
+
+        qvals = [q.getValue() for q in qs]
+
+        # * Construct our pot and orientation, and return it----------------------------------------------------------
+        # Get our dictionary of tile assignments and build our pot
+        pot = []
+        tile_assignments = {}
+        for tile_num in range(num_tiles):
+            if(int(0.1 + k_map.get((tile_num)).X) == 1):
+                tile = ''
+                for bond_edge in range(bond_edge_types):
+                    tile = tile + half_edges[bond_edge] * int(0.1 + tile_bets_map.get((tile_num, bond_edge, 0)).X)
+                    tile = tile + half_edges_hat[bond_edge] * int(0.1 + tile_bets_map.get((tile_num, bond_edge, 1)).X)
+                pot.append(tile)
+                tile_assignments.update({tile : []})
+                #add each vertex assigned to the tile
+                for vertex in range(num_verticies):
+                    if(int(0.1 + vertex_tiles_decision_map.get((vertex, tile_num)).X) == 1):
+                        tile_assignments.get(tile).append(vertex)
+
+        # Build the edges of the orientation of the graph
+        orientations = []
+        for bond_edge in range(bond_edge_types):
+            orientation = []
+            for vertex in range(num_verticies):
+                this_row = []
+                for othervertex in range(num_verticies):
+                    #Since the edge list only has one copy of each edge, we must check both directions
+                    if((vertex, othervertex) in edge_list or (othervertex, vertex) in edge_list):
+                        this_row.append(int(0.1 + edge_constraints_map.get((vertex, othervertex, bond_edge, 0)).X))
+                    else:
+                        this_row.append(0)
+                orientation.append(this_row)
+            orientations.append(orientation)
+
+        # Primarily for debugging: comment out to print all decision variable values
+        # for v in m.getVars():
+        #     print('%s %g' % (v.VarName, v.X))
+        savedata = [m, vertex_bets_map, tile_bets_map, vertex_tiles_decision_map, k_map, edge_constraints_map, qbounds, qs]
+
+        return pot, tile_assignments, orientations, qvals, savedata
+
+
+    except gp.GurobiError as e:
+        print('Error code ' + str(e.errno) + ': ' + str(e))
+
 def free_variable_solve(pot, bond_edge_types):
     possible_half_edges, possible_half_edges_hat = get_half_edge_labels()
     matrix = []
