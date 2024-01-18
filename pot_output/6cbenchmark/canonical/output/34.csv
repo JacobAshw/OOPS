@@ -1,0 +1,2 @@
+Graph,Methodnum,T_2 Value,T_2 Bonds,T_2 Pot,T_2 Pot Ratios,T_2 Orientation,B_2 Value,B_2 Tiles,B_2 Pot,B_2 Pot Ratios,B_2 Orientation,SamePot,TileTime,BondTime
+ECuw,4,4,2.0,"['Abbb', 'aaAb', 'aAB', 'B']","{'Abbb': [5], 'aaAb': [4], 'aAB': [0, 3], 'B': [1, 2]}","[[[0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0], [1, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0]], [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [1, 0, 1, 1, 0, 0]]]",2.0,4,,,,True,1.8067875001579523,8.243262100033462

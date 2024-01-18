@@ -1,0 +1,2 @@
+Graph,Methodnum,T_2 Value,T_2 Bonds,T_2 Pot,T_2 Pot Ratios,T_2 Orientation,B_2 Value,B_2 Tiles,B_2 Pot,B_2 Pot Ratios,B_2 Orientation,SamePot,TileTime,BondTime
+E]zw,1,4,2.0,"['aBBB', 'ABBBB', 'bbbB', 'bbB']","{'aBBB': [2], 'ABBBB': [5], 'bbbB': [0, 1, 4], 'bbB': [3]}","[[[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]], [[0, 0, 1, 1, 0, 1], [0, 0, 1, 0, 1, 1], [0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 1], [1, 0, 1, 0, 0, 1], [0, 0, 0, 0, 0, 0]]]",2.0,4,,,,True,6.442886600038037,5.007231299998239

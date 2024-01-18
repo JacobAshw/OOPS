@@ -8,9 +8,9 @@ import math
 import os
 import matplotlib.pyplot as plt
 
-configwritedir = "pot_output/hq4"
+configwritedir = "pot_output/6cbenchmark/hc1"
 graphdir = "noniso_graphs"
-graphfilename = "grapht.g6"
+graphfilename = "graph6c.g6"
 
 graphfile = open(graphdir + "/" + graphfilename, 'r')
 graphnames = [graphname[:len(graphname)-1] for graphname in graphfile.readlines()]
@@ -45,7 +45,7 @@ for graphname in graphnames:
     config['Instance']['display_graph'] = "False"
     config['Instance']['graphG6'] = "True"
     config['Instance']['outputfile'] = configwritedir + "/" + "output" + "/" + str(i) + ".csv"
-    config['Instance']['method'] = "5"
+    config['Instance']['method'] = "6"
     with open(configwritedir + "/" + str(i) + ".ini", 'w') as cfgfile:
         config.write(cfgfile)
     i = i + 1
