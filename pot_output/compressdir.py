@@ -9,8 +9,8 @@ import math
 import os
 import matplotlib.pyplot as plt
 
-compressdir = "pot_output/graph7c.g6_c1"
-finish = "pot_output/7c.csv"
+compressdir = "pot_output/6cbenchmark/hq1/output"
+finish = "pot_output/graphing/hq16c.csv"
 
 if not (os.path.exists(compressdir)):
     print("Not Found")

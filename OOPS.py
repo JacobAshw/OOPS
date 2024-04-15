@@ -85,7 +85,7 @@ if(graphG6):
     #     _ = f.seek(0)
     #     Graph = nx.read_graph6(f)
 else:
-    Graph = nx.parse_edgelist(graph)
+    Graph = nx.parse_edgelist(graph.split(','))
 
 # TODO: Add Numerical Precision checks, output error if potential error is greater than 1
 # TODO: Add ability to generate all optimal pots

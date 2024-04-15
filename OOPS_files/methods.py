@@ -121,6 +121,36 @@ def display_orientation(Graph, pot, tile_assignments, orientations, pos, old_lab
     nx.draw_networkx_edge_labels(D, pos, edge_lables)
     plt.show()
 
+def display_orientation_noinfo(pot, ratio, tile_assignments, orientations):
+    D = nx.MultiDiGraph()
+
+    numnodes = sum(ratio)
+    #Add each node
+    for vertex in range(numnodes):
+        D.add_node(vertex)
+
+    #Add each (directed) edge
+    edge_lables = {}
+    half_edges, half_edges_hat = get_half_edge_labels()
+    for index, orientation in enumerate(orientations):
+        for vertex1 in range(numnodes):
+            for vertex2 in range(numnodes):
+                if(orientation[vertex1][vertex2] == 1):
+                    D.add_edge(vertex1, vertex2)
+                    edge_lables.update({(vertex1, vertex2) : half_edges[index]})
+    #Color our nodes
+    color_list = get_color_list(len(pot))
+    color_map = {}
+    for index,assignment in enumerate(tile_assignments):
+        for tile in tile_assignments.get(assignment):
+            color_map.update({tile : color_list[index]})
+    colors = [color_map.get(vertex) for vertex in range(numnodes)]
+    #Display the graph
+    pos = nx.circular_layout(D)
+    nx.draw_networkx(D, pos, node_color=colors, with_labels=True)
+    nx.draw_networkx_edge_labels(D, pos, edge_lables)
+    plt.show()
+
 
 # This code runs the command line interface. It is largely uncommented, as the print statements provide sufficient information
 def CLI_Setup(version: str):
