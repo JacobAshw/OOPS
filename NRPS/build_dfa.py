@@ -272,6 +272,7 @@ class DFA:
             return None
 
         for i in perms[0].keys():
+            print("A")
             ap1 = perms[0].get(i)
             ap2 = perms[1].get(ap1)
             ap3 = perms[2].get(ap2)

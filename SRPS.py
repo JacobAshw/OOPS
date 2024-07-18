@@ -18,8 +18,10 @@ import sys
 # ---------------------------------------------------------------------------------------------------------------------------------------------------
 
 # ! ---------------------Put Target Pot Here-------------------------------
-pot = {"aA", "aB", "bA"}
+pot = {"A","aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
 # ! -----------------------------------------------------------------------
+
+time_initial = time.perf_counter()
 
 possible_half_edges, possible_half_edges_hat = get_half_edge_labels()
 
@@ -111,3 +113,6 @@ for index, tile in enumerate(pot):
 # This output is in the same order as the construction matrix
 # It will be an array of integers, specifying how many of the tile (represented by a column of M) are needed to build a smaller graph
 print("Amounts of each tile type to build the graph: " + str(tileusage))
+
+time_final = time.perf_counter()
+print("Took " + str(time_final-time_initial) + " seconds")

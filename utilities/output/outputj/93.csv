@@ -1,0 +1,2 @@
+Graph,Methodnum,T_2 Value,T_2 Bonds,T_2 Pot,T_2 Pot Ratios,T_2 Orientation,B_2 Value,B_2 Tiles,B_2 Pot,B_2 Pot Ratios,B_2 Orientation,SamePot,TileTime,BondTime
+GCuv~{,5,4,1.0,"['aaaaAAA', 'aaaAA', 'aaA', 'AAAAAAA']","{'aaaaAAA': [6], 'aaaAA': [0, 3, 4, 5], 'aaA': [1, 2], 'AAAAAAA': [7]}","[[[0, 0, 0, 1, 1, 0, 0, 1], [0, 0, 0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 1, 1, 0, 1], [0, 1, 0, 0, 0, 0, 1, 1], [1, 0, 0, 0, 0, 0, 1, 1], [1, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0]]]",1.0,4,,,,True,83.35194722935557,3.932695835828781e-05

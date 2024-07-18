@@ -6,8 +6,9 @@ from OOPS_files.methods import *
 import time
 import sys
 
+time_initial = time.perf_counter()
 # ! ---------------------Put Target Pot Here-------------------------------
-pot = ['aaB','aab','AB','Ab']
+pot = ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','A']
 # ! -----------------------------------------------------------------------
 buildGraphs = False
 
@@ -335,3 +336,5 @@ for G in nonisographs:
     info = DisplayInfo.get(G)
     display_orientation_noinfo(info[0], info[1], info[2], info[3])
 
+time_final = time.perf_counter()
+print("Took " + str(time_final-time_initial) + " seconds")
